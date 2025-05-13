@@ -39,4 +39,4 @@ reportSchema.index({ location: "2dsphere" });
 reportSchema.index({ status: 1 });
 reportSchema.index({ wasteType: 1 });
 
-mongoose.exports = mongoose.model("Report", reportSchema);
+mongoose.exports = mongoose.model("report", reportSchema, "report");

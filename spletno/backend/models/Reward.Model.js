@@ -18,7 +18,8 @@ var rewardSchema = new Schema({
         type: Date,
         required: true
     },
-    "image" : String
+    "image" : String,
+ 
 }, { timestamps: true } );
 
-mongoose.exports = mongoose.model("Reward", rewardSchema);
+mongoose.exports = mongoose.model("reward", rewardSchema, "reward");
