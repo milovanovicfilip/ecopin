@@ -13,23 +13,13 @@ var poiSchema = new Schema({
             enum: ["Point"],
             default: "Point"
         },
-        coords: {
+        coordinates: {
             type: [Number],
             required: true
         },
-        address: String
     },
-    "description": String,
-    /**"maintainedBy": {
-        type: Schema.Types.ObjectId,
-        ref: "UtilityCompany"
-    },**/
-    "status": {
-        type: String,
-        required: true,
-        enum: ["active", "damaged", "removed", "full"]
-    },
-    "lastChecked": Date
+    "address": String,
+    "description": String
 }, { timestamps: true });
 
 poiSchema.index({ location: '2dsphere' });
@@ -39,4 +29,4 @@ poiSchema.statics.findByType = async function(type) {
     return await this.find({ type }).exec();
 };
 
-mongoose.exports = mongoose.model("POI", poiSchema);
+mongoose.exports = mongoose.model("poi", poiSchema, "poi");
