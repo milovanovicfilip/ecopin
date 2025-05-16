@@ -57,9 +57,11 @@ var userSchema = new Schema({
 userSchema.statics.findOrCreate = async function(auth0Payload) {
     const user = await this.findOne({ auth0Id: auth0Payload.sub });
 
+    const username = auth0Payload.nickname || (auth0Payload.email ? auth0Payload.email.split('@')[0] : 'unknown');
+
     if (user) {
         user.name = auth0Payload.name;
-        user.nickname = auth0Payload.nickname
+        user.username = username;
         user.metadata.emailVerified = auth0Payload.email_verified || false;
         return user.save();
     }
@@ -68,7 +70,7 @@ userSchema.statics.findOrCreate = async function(auth0Payload) {
         auth0Id: auth0Payload.sub,
         email: auth0Payload.email,
         name: auth0Payload.name,
-        nickname: auth0Payload.nickname,
+        username: username,
         metadata: {
             auth0Provider: auth0Payload.sub.split('|')[0],
             emailVerified: auth0Payload.email_verified || false
@@ -76,9 +78,12 @@ userSchema.statics.findOrCreate = async function(auth0Payload) {
     });
 }
 
+
+
 userSchema.methods.addPoints = function(pointsToAdd) {
     this.points += pointsToAdd;
     return this.save();
 }
 
-module.exports = mongoose.model('user', userSchema, 'user');
+const User = mongoose.model('user', userSchema, 'user');
+export default User;
