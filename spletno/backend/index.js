@@ -11,9 +11,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// ========================
 // Middleware
-// ========================
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
@@ -21,14 +19,20 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ========================
+app.use((req, res, next) => {
+  if (
+    req.header('x-forwarded-proto') !== 'https' && 
+    process.env.NODE_ENV === 'production'
+  ) {
+    res.redirect(`https://${req.header('host')}${req.url}`);
+  } else {
+    next();
+  }
+});
+
 // Database Connection
-// ========================
 connectDB(); // Uses your MONGODB_URI from .env
 
-// ========================
-// Routes
-// ========================
 app.use('/api/users', userRoutes);
 
 // Health Check Endpoint
@@ -40,9 +44,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ========================
+
 // Error Handling
-// ========================
 app.use((err, req, res, next) => {
   console.error(err.stack);
   
@@ -56,9 +59,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ========================
 // Server Startup
-// ========================
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

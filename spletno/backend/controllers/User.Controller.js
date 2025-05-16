@@ -35,17 +35,14 @@ export default class UserController {
     try {
       const { email, password, name, lastname, username } = req.body;
 
-      // Create Auth0 user
-      const auth0User = await this.auth0.createUser({
-        connection: 'Username-Password-Authentication',
-        email,
-        password,
-        given_name: name,
-        family_name: lastname,
-        username: username,
-        email_verified: false,
-        verify_email: true
-      });
+        const auth0User = await this.auth0.createUser({
+            connection: 'Username-Password-Authentication',
+            email,
+            password,
+            username, // ← Critical: Auth0 needs this to allow username logins
+            given_name: name,
+            family_name: lastname,
+        });
 
       // Create MongoDB user
       const user = await User.create({
@@ -72,59 +69,80 @@ export default class UserController {
     }
   }
 
-  // User login
   async login(req, res) {
-    try {
-      const { email, password } = req.body;
+  try {
+    const { email, password, username } = req.body;
+    const origin = req.headers.origin || req.headers.referer || 'http://localhost:3000';
 
-      // Get Auth0 tokens
-      const tokenResponse = await axios.post(
-        `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
-        {
-          grant_type: 'password',
-          username: email,
-          password,
-          audience: process.env.AUTH0_AUDIENCE,
-          client_id: process.env.AUTH0_CLIENT_ID,
-          client_secret: process.env.AUTH0_CLIENT_SECRET,
-          scope: 'openid profile email'
-        }
-      );
-
-      // Get user info
-      const userInfo = await axios.get(
-        `https://${process.env.AUTH0_DOMAIN}/userinfo`,
-        {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.data.access_token}`
-          }
-        }
-      );
-
-      // Find or create in MongoDB
-      const user = await User.findOrCreate({
-        sub: userInfo.data.sub,
-        email: userInfo.data.email,
-        name: userInfo.data.given_name || userInfo.data.name.split(' ')[0],
-        lastname: userInfo.data.family_name || userInfo.data.name.split(' ')[1] || '',
-        nickname: userInfo.data.nickname,
-        email_verified: userInfo.data.email_verified
-      });
-
-      res.json({
-        accessToken: tokenResponse.data.access_token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          lastname: user.lastname,
-          username: user.username
-        }
-      });
-    } catch (error) {
-      res.status(401).json({ error: 'Invalid credentials' });
+    if ((!email && !username) || !password) {
+      return res.status(400).json({ error: 'Email/username and password required' });
     }
+
+    // Auth0 token request
+    const authResponse = await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+      {
+        grant_type: 'http://auth0.com/oauth/grant-type/password-realm',
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        username: email || username,
+        password: password,
+        audience: process.env.AUTH0_AUDIENCE,
+        scope: 'openid profile email',
+        realm: 'Username-Password-Authentication'
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': origin,
+          'Referer': origin
+        }
+      }
+    );
+
+    // Get user info from Auth0
+    const userInfo = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${authResponse.data.access_token}`
+        }
+      }
+    );
+
+    // Find and update user in MongoDB
+    const user = await User.findOneAndUpdate(
+      { auth0Id: userInfo.data.sub },
+      { 
+        $set: { 
+          'metadata.emailVerified': userInfo.data.email_verified || false 
+        } 
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+
+    res.json({
+      accessToken: authResponse.data.access_token,
+      idToken: authResponse.data.id_token,
+      expiresIn: authResponse.data.expires_in,
+      user: {
+        emailVerified: user.metadata.emailVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({
+      error: error.response?.data?.error_description || 'Login failed',
+      details: error.response?.data
+    });
   }
+}
 
   // Get current user
   async getCurrentUser(req, res) {
