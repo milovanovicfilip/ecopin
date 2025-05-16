@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
-var actionSchema = new Schema({
-    "teamId": {
+var eventSchema = new Schema({
+    "team": {
         type: Schema.Types.ObjectId,
-        ref: "Team",
+        ref: "team",
         required: true
     },
     "name": {
@@ -15,11 +15,11 @@ var actionSchema = new Schema({
     "description": String,
     "location": {
         type: {
-            enum: String,
+            type: String,
             enum: ["Point"],
             default: "Point"
         },
-        coords: {
+        coordinates: {
             type: [Number],
             required: true
         },
@@ -41,14 +41,16 @@ var actionSchema = new Schema({
     },
     "organizer": {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true
     },
-    "participants": [{
+    "participants": [
+        {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true
-    }],
+        }
+    ],
     "wasteCollected": {
         "type": {
             type: String,
@@ -74,4 +76,4 @@ actionSchema.index({ location: "2dsphere" });
 actionSchema.index({ startTime: 1 });
 actionSchema.index({ status: 1 });
 
-mongoose.exports = mongoose.model("Action", actionSchema);
+mongoose.exports = mongoose.model("event", eventSchema, "event");

@@ -2,14 +2,14 @@ import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 var messageSchema = new Schema({
-    "teamId": {
+    "team": {
         type: Schema.Types.ObjectId,
-        ref: "Team",
+        ref: "team",
         required: true
     },
-    "senderId": {
+    "sender": {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true
     },
     "content": {
@@ -23,6 +23,6 @@ var messageSchema = new Schema({
     }
 });
 
-messageSchema.index({ teamId: 1, timestamp: -1 });
+messageSchema.index({ team: 1, timestamp: -1 });
 
-mongoose.exports = mongoose.model("Message", messageSchema);
+mongoose.exports = mongoose.model("message", messageSchema, "message");
