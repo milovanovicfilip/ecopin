@@ -2,23 +2,23 @@ import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 var reportSchema = new Schema({
-    "reportedBy": {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-    },
     "location": {
         type: {
             type: String,
             enum: ["Point"],
             default: "Point"
         },
-        coords: {
+        coordinats: {
             type: [Number],
             required:true
         }
     },
-    "address": String,
-    "wasteType": {
+    "reportedBy": {
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    },
+    "description": String,
+    "type": {
         type: String,
         enum: ["mixed", "recyclable", "organic", "construction", "hazardous"],
         default: "mixed"
@@ -32,11 +32,40 @@ var reportSchema = new Schema({
         type: String,
         enum: ["low", "medium", "high"],
         default: "medium"
-    }
+    },
+    "image": String
 }, { timestamps: true });
 
 reportSchema.index({ location: "2dsphere" });
 reportSchema.index({ status: 1 });
-reportSchema.index({ wasteType: 1 });
+reportSchema.index({ type: 1 });
 
-mongoose.exports = mongoose.model("report", reportSchema, "report");
+reportSchema.statics.findByStatus = async function(status) {
+    return await this.find({ status }).exec();
+};
+
+reportSchema.statics.findByType = async function(type) {
+    return await this.find({ type }).exec();
+};
+
+reportSchema.statics.findWithinPolygon = async function(polygonCoordinates, types = []) {
+    const query = {
+        location: {
+            $geoWithin: {
+                $geometry: {
+                    type: "Polygon",
+                    coordinates: [polygonCoordinates]
+                }
+            }
+        }
+    };
+
+    if (types.length > 0) {
+        query.type = { $in: types };
+    }
+
+    return await this.find(query);
+};
+
+const ReportModel = mongoose.model("report", reportSchema, "report");
+export default ReportModel;

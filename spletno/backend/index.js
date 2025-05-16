@@ -1,24 +1,12 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-
-var mongodb = "mongodb+srv://milovanovic8filip:geslo123@cluster0.gsr8kmn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-mongoose.connect(mongodb);
-mongoose.Promise = global.Promise;
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-
-var app = express()
-dotenv.config()
-
 import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 import { userRouter } from "./routers/User.Router.js";
-import { siteRouter } from "./routers/Site.Router.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import { generateKey } from "crypto";
+import { poiRouter } from "./routers/Poi.Router.js";
+import { reportRouter } from "./routers/Report.Router.js";
 
 const app = express();
 app.use(express.json());
@@ -27,8 +15,9 @@ app.use(cors({
     origin: 'http://localhost:3000',
 }));
 
-app.use('/api', siteRouter)
-app.use('/api/user', userRouter);
+app.use('/api/poi', poiRouter)
+app.use('/api/report', reportRouter)
+//app.use('/api/user', userRouter);
 
 mongoose.connect(process.env.MONGO_DB)
     .then(() => {

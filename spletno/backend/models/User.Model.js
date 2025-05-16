@@ -81,4 +81,5 @@ userSchema.methods.addPoints = function(pointsToAdd) {
     return this.save();
 }
 
-module.exports = mongoose.model('user', userSchema, 'user');
+const UserModel = mongoose.model('user', userSchema, 'user');
+export default UserModel;

@@ -1,45 +1,169 @@
-
-const fs = require('fs');
-const path = require('path');
-const { promisify } = require('util');
+import fs, { stat } from 'fs';
+import path from 'path';
+import { promisify } from 'util';
+import ReportModel from '../models/Report.Model.js'
+import UserModel from '../models/User.Model.js'
 const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 
 export default class ReportController{
     constructor(){}
 
-    getAllReports = async function (req, res) {
+    getAll = async function (req, res) {
         try{
-            const data = await Report.find();
-            return response.status(200).json(data);
+            var status = req.query.status
+            const data = await ReportModel.findByStatus(status.split(','));
+            return res.status(200).json(data);
         }
         catch(error){
-            console.log(error);
-            return response.status(500).json({
+            console.error('Error in getAllReports:', error);
+            return res.status(500).json({
                 success: false,
-                message: 'An unexpected error occurred'
+                message: 'Internal server error'
             });
         }
     }
 
-    getReportById = async function (req, res) {
+    getById = async function (req, res) {
         try{
-            const id = req.body.id;
-            const data = await Report.findById(id);
-            return response.status(200).json(data);
+            const id = req.params.id;
+            const data = await ReportModel.findById(id);
+
+            if (!data) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Report not found'
+                });
+            }
+
+            return res.status(200).json(data);
         }catch(error){
             console.error('Error in getReportById:', error);
-            return res.status(400).json({ 
+            return res.status(500).json({ 
                 success: false, 
-                message: 'An unexpected error occurred' 
+                message: 'Internal server error' 
             });
         }
     }
 
-    addReport = async function (req, res) {
+    getByUser = async function (req, res) {
         try{
-            const {location, reportType, description, city} = req.body
-            const images = req.files || [];
+            const userid = req.body.userid;
+            const data = await ReportModel.find({reportedBy: userid});
+
+            if (!data) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Report not found'
+                });
+            }
+
+            return res.status(200).json(data);
+        }catch(error){
+            console.error('Error in getReportById:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
+        }
+    }
+
+    getVisible = async function (req, res) {
+        try{
+            const {bbox, status} = req.query;
+
+            if(!bbox){
+                return res.status(400).json({
+                    success: false,
+                    message: "Bounding box (bbox) parameter is required"
+                })
+            }
+
+            const bboxCoords = bbox.split(',').map(coordinates => parseFloat(coordinates));
+            if (bboxCoords.length !== 4 || bboxCoords.some(isNaN)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid bbox format. Use minLon,minLat,maxLon,maxLat"
+                });
+            }
+    
+            const query = {
+                location: {
+                    $geoWithin: {
+                        $box: [
+                            [bboxCoords[0], bboxCoords[1]],
+                            [bboxCoords[2], bboxCoords[3]]
+                        ]
+                    }
+                }
+            };
+
+            if (status) {
+                const statusArray = status.split(',');
+                const validStatus = ["reported", "in_progress", "cleaned"];
+                
+                const invalidStatus = statusArray.filter(s => !validStatus.includes(s));
+                if (invalidStatus.length > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Invalid Report types: ${invalidStatus.join(', ')}`
+                    });
+                }
+
+                query.status = { $in: statusArray };
+            }
+            
+            const visibleReports = await ReportModel.find(query);
+            res.json(visibleReports);
+        }catch(error){
+            console.error('Error in getVisibleReports:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
+        }
+    }
+
+    getInPoligon = async function (req, res) {
+            try{
+                const { coordinates, status } = req.body;
+    
+                if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 3) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Polygon must have at least 3 coordinates"
+                    });
+                }
+                
+                const closedCoordinates = [...coordinates];
+                if (!closedCoordinates[0].equals(closedCoordinates[closedCoordinates.length - 1])) {
+                    closedCoordinates.push(closedCoordinates[0]);
+                }
+    
+                const reports = await ReportModel.findWithinPolygon(
+                    closedCoordinates,
+                    status ? status.split(',') : []
+                );
+    
+                res.json({
+                    success: true,
+                    count: reports.length,
+                    data: reports
+                });
+            }catch(error){
+                console.error('Error in getReportsInPoligon:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Internal server error'
+                })
+                
+            }
+        }
+
+    add = async function (req, res) {
+        try{
+            var {location, reportedBy, description, type, status, severity} = req.body
+            const image = req.files || null;
 
             if (!location || !location.coordinates || !location.type){
                 return res.status(400).json({
@@ -48,17 +172,23 @@ export default class ReportController{
                 })
             }
 
-            if (!reportType || !['missing_bin', 'missing_eco_island', 'missing_disposal_site', 'illegal_dumping'].includes(reportType)){
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Valid reportType is required'  
-                });
+            if (!["mixed", "recyclable", "organic", "construction", "hazardous"].includes(type)){
+                type = "mixed";
             }
 
-            if (!city || typeof city !== 'string') {
-                return res.status(400).json({ 
+            if (!["reported", "in_progress", "cleaned"].includes(status)){
+                status = "reported"
+            }
+
+            if (!["low", "medium", "high"].includes(severity)){
+                severity = "medium"
+            }
+
+            const user = await UserModel.findById(reportedBy);
+            if(!user){
+                return res.status(404).json({ 
                     success: false, 
-                    message: 'City name is required' 
+                    message: 'User not found' 
                 });
             }
 
@@ -78,36 +208,32 @@ export default class ReportController{
                 fs.mkdirSync(uploadDir, { recursive: true });
             }
 
-            for (const file of images) {
-                try {
-                    if (!file.mimetype.startsWith('image/')) {
-                        continue;
-                    }
-
-                    const ext = path.extname(file.originalname);
+            
+            try {
+                if (image.mimetype.startsWith('image/')) {
+                    const ext = path.extname(image.originalname);
                     const filename = `report_${Date.now()}${ext}`;
                     const filePath = path.join(uploadDir, filename);
 
-                    await writeFileAsync(filePath, file.buffer);
+                    await writeFileAsync(filePath, image.buffer);
 
                     savedImages.push(`/uploads/${filename}`);
-                } catch (error) {
-                    console.error('Error saving image:', error);
                 }
+            } catch (error) {
+                console.error('Error saving image:', error);
             }
-
-
+            
             const newReport = new Report({
                 location: {
                     type: location.type,
                     coordinates: [parseFloat(longitude), parseFloat(latitude)]
                 },
-                reportType: reportType,
-                description: description || '',
-                status: 'pending',
                 reportedBy: req.user._id,
-                images: savedImages,
-                city: city
+                description: description || '',
+                type: type,
+                status: status,
+                severity: severity,
+                image: image
             });
 
             await newReport.save();
@@ -137,4 +263,96 @@ export default class ReportController{
             });
         }
     }
+
+    update = async function (req, res) {
+            try{
+                const id = req.params.id;
+                var {description, type, status, severity} = req.body
+                const image = req.files || null;
+
+                var report = await ReportModel.findById(id)
+                if (!report) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Report not found'
+                    });
+                }
+                
+                
+                if (type) {
+                    if (!["mixed", "recyclable", "organic", "construction", "hazardous"].includes(type)) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'Valid type is required'  
+                        });
+                    }
+                    report.type = type;
+                }
+
+                if(status){
+                    if (!["reported", "in_progress", "cleaned"].includes(status)) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'Valid status is required'  
+                        });
+                    }
+                    report.status = status;
+                }
+
+                if(severity){
+                    if (!["low", "medium", "high"].includes(severity)) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'Valid severity is required'  
+                        });
+                    }
+                    report.severity = severity;
+                }
+    
+                report.description = description ? description : report.description;
+    
+                await report.save()
+    
+                return res.status(200).json({
+                    success: true,
+                    message: 'Report successfully updated'
+                });
+    
+            }catch (error) {
+                console.error('Error in updateReport:', error);
+    
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Internal server error'
+                });
+            }
+        }
+    
+        delete = async function (req, res) {
+            try{
+                const id = req.params.id;
+    
+                const result = await ReportModel.deleteOne({_id: id})
+                
+                if (result.deletedCount === 0) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Report not found'
+                    });
+                }
+    
+                return res.status(200).json({
+                    success: true,
+                    message: 'Report successfully deleted'
+                });
+    
+            }catch (error) {
+                console.error('Error in deleteReport:', error);
+    
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Internal server error'
+                });
+            }
+        }
 }

@@ -2,14 +2,9 @@ import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 var poiSchema = new Schema({
-    "type": {
-        type: String,
-        required: true,
-        enum: ["eco-island", "disposal-site", "bin"]
-    },
     "location": {
         type: {
-            enum: String,
+            type: String,
             enum: ["Point"],
             default: "Point"
         },
@@ -18,7 +13,13 @@ var poiSchema = new Schema({
             required: true
         },
     },
+    "type": {
+        type: String,
+        required: true,
+        enum: ["eco-island", "disposal-site", "bin"]
+    },
     "address": String,
+    "city": String,
     "description": String
 }, { timestamps: true });
 
@@ -29,4 +30,24 @@ poiSchema.statics.findByType = async function(type) {
     return await this.find({ type }).exec();
 };
 
-mongoose.exports = mongoose.model("poi", poiSchema, "poi");
+poiSchema.statics.findWithinPolygon = async function(polygonCoordinates, types = []) {
+    const query = {
+        location: {
+            $geoWithin: {
+                $geometry: {
+                    type: "Polygon",
+                    coordinates: [polygonCoordinates]
+                }
+            }
+        }
+    };
+
+    if (types.length > 0) {
+        query.type = { $in: types };
+    }
+
+    return await this.find(query);
+};
+
+const PoiModel = mongoose.model("poi", poiSchema, "poi");
+export default PoiModel;
