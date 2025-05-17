@@ -49,5 +49,5 @@ poiSchema.statics.findWithinPolygon = async function(polygonCoordinates, types =
     return await this.find(query);
 };
 
-const PoiModel = mongoose.model("poi", poiSchema, "poi");
+const PoiModel = mongoose.model("pois", poiSchema, "pois");
 export default PoiModel;

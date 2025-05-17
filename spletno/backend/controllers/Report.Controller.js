@@ -1,8 +1,11 @@
 import fs, { stat } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import ReportModel from '../models/Report.Model.js'
 import UserModel from '../models/User.Model.js'
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 
@@ -12,6 +15,10 @@ export default class ReportController{
     getAll = async function (req, res) {
         try{
             var status = req.query.status
+            if(!status){
+                status = "reported,in_progress,cleaned"
+            }
+
             const data = await ReportModel.findByStatus(status.split(','));
             return res.status(200).json(data);
         }
@@ -48,9 +55,9 @@ export default class ReportController{
 
     getByUser = async function (req, res) {
         try{
-            const userid = req.body.userid;
+            const userid = req.params.userid;
             const data = await ReportModel.find({reportedBy: userid});
-
+            
             if (!data) {
                 return res.status(404).json({
                     success: false,
@@ -111,6 +118,9 @@ export default class ReportController{
                 }
 
                 query.status = { $in: statusArray };
+            }else{
+                const typesArray = ["reported", "in_progress", "cleaned"];
+                query.type = { $in: typesArray };
             }
             
             const visibleReports = await ReportModel.find(query);
@@ -161,17 +171,21 @@ export default class ReportController{
         }
 
     add = async function (req, res) {
+        let savedImagePath = null;
+
         try{
             var {location, reportedBy, description, type, status, severity} = req.body
-            const image = req.files || null;
+            const image = req.file || null;
+            var parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
 
-            if (!location || !location.coordinates || !location.type){
+            if (!parsedLocation || !parsedLocation.coordinates || !parsedLocation.type){
                 return res.status(400).json({
                     success: false,
                     message: 'Location data is required with coordinates and type'
                 })
             }
-
+           
+            
             if (!["mixed", "recyclable", "organic", "construction", "hazardous"].includes(type)){
                 type = "mixed";
             }
@@ -192,7 +206,7 @@ export default class ReportController{
                 });
             }
 
-            const [longitude, latitude] = location.coordinates;
+            const [longitude, latitude] = parsedLocation.coordinates;
 
             if (isNaN(longitude) || isNaN(latitude) || longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
                 return res.status(400).json({ 
@@ -201,39 +215,35 @@ export default class ReportController{
                 });
             }
 
-            const savedImages = [];
-            const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
-        
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
+            if (image) {
+                const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
             
-            try {
-                if (image.mimetype.startsWith('image/')) {
-                    const ext = path.extname(image.originalname);
-                    const filename = `report_${Date.now()}${ext}`;
-                    const filePath = path.join(uploadDir, filename);
-
-                    await writeFileAsync(filePath, image.buffer);
-
-                    savedImages.push(`/uploads/${filename}`);
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
                 }
-            } catch (error) {
-                console.error('Error saving image:', error);
+
+                const ext = path.extname(image.originalname);
+                const filename = `report_${Date.now()}${ext}`;
+                const filePath = path.join(uploadDir, filename);
+
+                await fs.promises.copyFile(image.path, filePath);
+                savedImagePath = `/uploads/${filename}`;
+
+                await fs.promises.unlink(image.path);
             }
-            
-            const newReport = new Report({
+
+            const newReport = new ReportModel({
                 location: {
-                    type: location.type,
+                    type: parsedLocation.type,
                     coordinates: [parseFloat(longitude), parseFloat(latitude)]
                 },
-                reportedBy: req.user._id,
+                //reportedBy: req.user._id,
+                reportedBy: reportedBy,
                 description: description || '',
                 type: type,
                 status: status,
                 severity: severity,
-                image: image
+                image: savedImagePath
             });
 
             await newReport.save();
@@ -246,14 +256,12 @@ export default class ReportController{
         }catch (error) {
             console.error('Error in addReport:', error);
         
-            if (savedImages && savedImages.length > 0) {
-                for (const image of savedImages) {
-                    try {
-                        const filename = path.basename(image);
-                        await unlinkAsync(path.join(__dirname, '..', 'public', 'uploads', filename));
-                    } catch (unlinkError) {
-                        console.error('Error deleting image:', unlinkError);
-                    }
+            if (savedImagePath) {
+                try {
+                    const filename = path.basename(savedImagePath);
+                    await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
+                } catch (unlinkError) {
+                    console.error('Error deleting image:', unlinkError);
                 }
             }
 
@@ -268,8 +276,7 @@ export default class ReportController{
             try{
                 const id = req.params.id;
                 var {description, type, status, severity} = req.body
-                const image = req.files || null;
-
+                
                 var report = await ReportModel.findById(id)
                 if (!report) {
                     return res.status(404).json({
@@ -309,8 +316,9 @@ export default class ReportController{
                     report.severity = severity;
                 }
     
-                report.description = description ? description : report.description;
-    
+                if (description !== undefined) {
+                    report.description = description;
+                 }    
                 await report.save()
     
                 return res.status(200).json({

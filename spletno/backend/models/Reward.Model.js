@@ -4,8 +4,7 @@ var Schema = mongoose.Schema;
 var rewardSchema = new Schema({
     "name": {
         type: String,
-        required: true,
-        maxlength: [100, "Event name cannot exceed 100 chatacters"]
+        required: true
     },
     "description": String,
     "partner": String,

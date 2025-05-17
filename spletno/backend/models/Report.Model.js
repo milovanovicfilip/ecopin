@@ -8,7 +8,7 @@ var reportSchema = new Schema({
             enum: ["Point"],
             default: "Point"
         },
-        coordinats: {
+        coordinates: {
             type: [Number],
             required:true
         }

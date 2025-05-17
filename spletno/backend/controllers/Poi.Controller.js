@@ -6,6 +6,10 @@ export default class PoiController{
     getAll = async function (req, res) {
         try{
             var type = req.query.type
+            if(!type){
+                type = "eco-island,disposal-site,bin"
+            }
+            
             const data = await PoiModel.findByType(type.split(','));
             return res.status(200).json(data);
         }
@@ -82,6 +86,9 @@ export default class PoiController{
                     });
                 }
 
+                query.type = { $in: typesArray };
+            }else{
+                const typesArray = ["eco-island", "disposal-site", "bin"];
                 query.type = { $in: typesArray };
             }
             
