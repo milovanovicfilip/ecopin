@@ -1,5 +1,5 @@
 import request from 'supertest';
-import index from "./index.js"
+import index from "../index.js"
 import mongoose from 'mongoose';
 import Report from "../models/Report.Model.js"
 import dotenv from "dotenv";
@@ -8,26 +8,6 @@ dotenv.config()
 describe('Automatic testing of API routes for Report', () => {
     let testReportId;
     let authToken;
-
-    beforeAll(async () => {
-        await mongoose.connect(process.env.MONGO_DB, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        });
-
-        const registerResponse = await request(index)
-        .post('/api/register')
-        .send({
-            email: 'test@example.com',
-            username: 'test',
-            name: 'test',
-            lastname: 'test',
-            password: 'testpassword'
-            });
-        
-        authToken = registerResponse.body.token;
-    
-    });
 
     afterAll(async () => {
         await Report.deleteMany({});
