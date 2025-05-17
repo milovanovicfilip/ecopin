@@ -39,4 +39,5 @@ reportSchema.index({ location: "2dsphere" });
 reportSchema.index({ status: 1 });
 reportSchema.index({ wasteType: 1 });
 
-mongoose.exports = mongoose.model("report", reportSchema, "report");
+const Report = mongoose.model("report", reportSchema, "report");
+export default Report;

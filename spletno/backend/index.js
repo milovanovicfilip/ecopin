@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import userRoutes from './routes/User.Router.js';
+import { reportRouter } from './routes/Report.Router.js';
+import { poiRouter } from './routes/Poi.Router.js';
 import { connectDB } from './utils/db.js';
 
 // Load environment variables
@@ -34,6 +36,8 @@ app.use((req, res, next) => {
 connectDB(); // Uses your MONGODB_URI from .env
 
 app.use('/api/users', userRoutes);
+app.use('/api/poi', poiRouter);
+app.use('/api/report', reportRouter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

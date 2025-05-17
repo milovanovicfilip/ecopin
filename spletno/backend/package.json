@@ -20,7 +20,12 @@
     "jwks-rsa": "^3.2.0",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.2",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "fs-extra": "^11.3.0",
+    "@dicebear/avatars": "^4.10.8",
+    "@dicebear/collection": "^9.2.2"
   },
   "type": "module"
 }
