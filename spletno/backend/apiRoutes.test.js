@@ -39,7 +39,7 @@ describe('Automatic testing of API routes for Report', () => {
             const newReport = {
                 location: { 
                     type: 'Point', 
-                    coordinates: [46.56145033140468, 15.635163957985426] 
+                    coordinates: [46.56145033140468, 15.635163957985426]
                 },
                 reportType: 'missing_bin',
                 city: 'Maribor',
