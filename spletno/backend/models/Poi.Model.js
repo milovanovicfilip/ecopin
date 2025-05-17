@@ -29,7 +29,10 @@ var poiSchema = new Schema({
         required: true,
         enum: ["active", "damaged", "removed", "full"]
     },
-    "lastChecked": Date
+    lastChecked: {
+        type: Date,
+        default: () => new Date()
+    }
 }, { timestamps: true });
 
 poiSchema.index({ location: '2dsphere' });

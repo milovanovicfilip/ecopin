@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cors from "cors";
 import POIRouter from "./routers/Overpass.Router.js";
-
+import { schedulePOIFetch } from './services/schedule.js';
 dotenv.config()
 
 const app = express();
@@ -29,3 +29,5 @@ app.use('/api/overpass', POIRouter);
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}/`);
 });
+
+schedulePOIFetch();
