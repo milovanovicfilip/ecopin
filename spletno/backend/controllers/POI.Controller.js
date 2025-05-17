@@ -1,14 +1,17 @@
 import fetch from "node-fetch";
-import {POI} from "../models/Poi.Model.js";
+import POI from "../models/Poi.Model.js";
 
 export const fetchPOIs = async (req, res) => {
     try{
+
         const query = `
-        [out:json][timeout:25];
+        [out:json][timeout:180];
+        area[name="Slovenija"]->.searchArea;
+
         (
-            node["amenity" = "waste_basket"](area:3600051471);
-            node["amenity" = "waste_disposal"](area:3600051471);
-            node["amenity" = "eco-island"](area:3600051471);
+        node["amenity"="waste_basket"](area.searchArea);
+        node["amenity"="waste_disposal"](area.searchArea);
+        node["amenity"="recycling"](area.searchArea);
         );
         out body;
         `;
@@ -24,19 +27,22 @@ export const fetchPOIs = async (req, res) => {
         const points = data.elements
             .filter(el => el.type === "node" && el.lat && el.lon)
             .map(el => {
-                let type = "bin";
-                if(el.tags?.amenity === "eco-island") {
-                    type = "eco-island";
+                let type = "unknown";
+                if(el.tags?.amenity === "waste_basket") {
+                    type = "bin";
                 }
                 if(el.tags?.amenity === "waste_disposal") {
                     type = "disposal-site";
+                }
+                if(el.tags?.amenity === "recycling") {
+                    type = "eco-island";
                 }
 
                 return {
                     type,
                     location: {
                         type: "Point",
-                        coords: [el.lon, el.lat],
+                        coordinates: [el.lon, el.lat],
                         address: null
                     },
                     description: el.tags?.description || "",
@@ -46,7 +52,7 @@ export const fetchPOIs = async (req, res) => {
             });
 
         const insertedPOIs = await POI.insertMany(points, { ordered: false });
-
+        console.log("Inserted POIs: ", insertedPOIs.length);
         res.json({
             message: "POIs fetched and inserted successfully",
             count: insertedPOIs.length

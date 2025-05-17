@@ -13,7 +13,7 @@ var poiSchema = new Schema({
             enum: ["Point"],
             default: "Point"
         },
-        coords: {
+        coordinates: {
             type: [Number],
             required: true
         },
