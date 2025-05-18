@@ -1,0 +1,59 @@
+export const ROLES = {
+  ADMIN: 'admin',
+  MODERATOR: 'moderator',
+  USER: 'user',
+  GUEST: 'guest'
+};
+
+export const PERMISSIONS = {
+  // POI permissions
+  POI_READ: 'poi:read',
+  POI_CREATE: 'poi:create',
+  POI_UPDATE: 'poi:update',
+  POI_DELETE: 'poi:delete',
+  
+  // Report permissions
+  REPORT_READ: 'report:read',
+  REPORT_CREATE: 'report:create',
+  REPORT_UPDATE: 'report:update',
+  REPORT_DELETE: 'report:delete',
+  REPORT_UPDATE_STATUS: 'report:update_status',
+  
+  // User permissions
+  USER_READ: 'user:read',
+  USER_UPDATE: 'user:update'
+};
+
+// Role to permissions mapping
+export const ROLE_PERMISSIONS = {
+  [ROLES.ADMIN]: [
+    PERMISSIONS.POI_READ,
+    PERMISSIONS.POI_CREATE,
+    PERMISSIONS.POI_UPDATE,
+    PERMISSIONS.POI_DELETE,
+    PERMISSIONS.REPORT_READ,
+    PERMISSIONS.REPORT_CREATE,
+    PERMISSIONS.REPORT_UPDATE,
+    PERMISSIONS.REPORT_DELETE,
+    PERMISSIONS.REPORT_UPDATE_STATUS,
+    PERMISSIONS.USER_READ,
+    PERMISSIONS.USER_UPDATE
+  ],
+  [ROLES.MODERATOR]: [
+    PERMISSIONS.POI_READ,
+    PERMISSIONS.POI_CREATE,
+    PERMISSIONS.POI_UPDATE,
+    PERMISSIONS.REPORT_READ,
+    PERMISSIONS.REPORT_CREATE,
+    PERMISSIONS.REPORT_UPDATE,
+    PERMISSIONS.REPORT_UPDATE_STATUS
+  ],
+  [ROLES.USER]: [
+    PERMISSIONS.POI_READ,
+    PERMISSIONS.REPORT_READ,
+    PERMISSIONS.REPORT_CREATE
+  ],
+  [ROLES.GUEST]: [
+    PERMISSIONS.POI_READ
+  ]
+};
