@@ -1,12 +1,7 @@
 import mongoose from "mongoose";
-import { ROLES, ROLE_PERMISSIONS } from '../utils/roles.js';
+import { ROLES } from '../utils/roles.js';
 
 const Schema = mongoose.Schema;
-
-const metadataSchema = new Schema({
-  auth0Provider: String,
-  emailVerified: Boolean,
-});
 
 const userSchema = new Schema({
   auth0Id: {
@@ -23,38 +18,40 @@ const userSchema = new Schema({
   },
   name: {
     type: String,
-    trim: true,
-    required: true
+    trim: true
   },
   lastname: {
     type: String,
-    trim: true,
-    required: true
+    trim: true
   },
   username: {
     type: String,
     trim: true,
-    required: true
-  },
-  points: {
-    type: Number,
-    default: 0
+    unique: true
   },
   roles: {
     type: [String],
     enum: Object.values(ROLES),
     default: [ROLES.USER]
   },
-  teams: [{
-    type: Schema.Types.ObjectId,
-    ref: 'team'
-  }],
-  events: [{
-    type: Schema.Types.ObjectId,
-    ref: 'event'
-  }],
-  metadata: metadataSchema
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
 });
+
+userSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+userSchema.methods.hasRole = function(role) {
+  return this.roles.includes(role);
+};
 
 userSchema.methods.hasPermission = function(permission) {
   return this.roles.some(role => 
@@ -62,40 +59,23 @@ userSchema.methods.hasPermission = function(permission) {
   );
 };
 
-userSchema.methods.hasRole = function(role) {
-  return this.roles.includes(role);
-};
-
-userSchema.statics.findOrCreate = async function(auth0Payload) {
-  const user = await this.findOne({ auth0Id: auth0Payload.sub });
-
-  const username = auth0Payload.nickname || 
-                 (auth0Payload.email ? auth0Payload.email.split('@')[0] : 'unknown');
+userSchema.statics.findOrCreate = async function(auth0User) {
+  let user = await this.findOne({ auth0Id: auth0User.sub });
   
-  const namespace = process.env.AUTH0_NAMESPACE;
-  const roles = auth0Payload[`${namespace}roles`] || [ROLES.USER];
-
-  if (user) {
-    user.name = auth0Payload.name || user.name;
-    user.username = username;
-    user.roles = roles;
-    user.metadata.emailVerified = auth0Payload.email_verified || user.metadata.emailVerified;
-    return user.save();
+  if (!user) {
+    user = new this({
+      auth0Id: auth0User.sub,
+      email: auth0User.email,
+      name: auth0User.given_name || '',
+      lastname: auth0User.family_name || '',
+      username: auth0User.nickname || auth0User.email.split('@')[0],
+      roles: auth0User[`${process.env.AUTH0_NAMESPACE}roles`] || [ROLES.USER]
+    });
+    await user.save();
   }
 
-  return this.create({
-    auth0Id: auth0Payload.sub,
-    email: auth0Payload.email,
-    name: auth0Payload.name || '',
-    lastname: auth0Payload.family_name || '',
-    username: username,
-    roles: roles,
-    metadata: {
-      auth0Provider: auth0Payload.sub.split('|')[0],
-      emailVerified: auth0Payload.email_verified || false
-    }
-  });
+  return user;
 };
 
-const User = mongoose.model('users', userSchema);
+const User = mongoose.model('users', userSchema, 'users');
 export default User;

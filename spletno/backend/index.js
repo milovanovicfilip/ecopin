@@ -33,7 +33,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-mongoose.connect(process.env.MONGO_DB)
+mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log("MongoDB Connected: ✅");
     })

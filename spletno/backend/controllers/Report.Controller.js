@@ -4,13 +4,16 @@ import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import ReportModel from '../models/Report.Model.js'
 import UserModel from '../models/User.Model.js'
+import { checkJwt, getUserFromDb } from '../utils/jwt.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 
 export default class ReportController{
-    constructor(){}
+    constructor() {
+        this.requireAuth = [checkJwt, getUserFromDb];
+    }
 
     getAll = async function (req, res) {
         try{
@@ -173,102 +176,101 @@ export default class ReportController{
     add = async function (req, res) {
         let savedImagePath = null;
 
-        try{
-            var {location, reportedBy, description, type, status, severity} = req.body
-            const image = req.file || null;
-            var parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
+        try {
+        const { location, description, type, status, severity } = req.body;
+        const image = req.file || null;
+        const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
 
-            if (!parsedLocation || !parsedLocation.coordinates || !parsedLocation.type){
-                return res.status(400).json({
-                    success: false,
-                    message: 'Location data is required with coordinates and type'
-                })
-            }
-           
-            
-            if (!["mixed", "recyclable", "organic", "construction", "hazardous"].includes(type)){
-                type = "mixed";
-            }
-
-            if (!["reported", "in_progress", "cleaned"].includes(status)){
-                status = "reported"
-            }
-
-            if (!["low", "medium", "high"].includes(severity)){
-                severity = "medium"
-            }
-
-            const user = await UserModel.findById(reportedBy);
-            if(!user){
-                return res.status(404).json({ 
-                    success: false, 
-                    message: 'User not found' 
-                });
-            }
-
-            const [longitude, latitude] = parsedLocation.coordinates;
-
-            if (isNaN(longitude) || isNaN(latitude) || longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Invalid coordinates' 
-                });
-            }
-
-            if (image) {
-                const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
-            
-                if (!fs.existsSync(uploadDir)) {
-                    fs.mkdirSync(uploadDir, { recursive: true });
-                }
-
-                const ext = path.extname(image.originalname);
-                const filename = `report_${Date.now()}${ext}`;
-                const filePath = path.join(uploadDir, filename);
-
-                await fs.promises.copyFile(image.path, filePath);
-                savedImagePath = `/uploads/${filename}`;
-
-                await fs.promises.unlink(image.path);
-            }
-
-            const newReport = new ReportModel({
-                location: {
-                    type: parsedLocation.type,
-                    coordinates: [parseFloat(longitude), parseFloat(latitude)]
-                },
-                //reportedBy: req.user._id,
-                reportedBy: reportedBy,
-                description: description || '',
-                type: type,
-                status: status,
-                severity: severity,
-                image: savedImagePath
+        // Preveri obvezna polja
+        if (!parsedLocation?.coordinates || !parsedLocation?.type) {
+            return res.status(400).json({
+            success: false,
+            message: 'Location data is required with coordinates and type'
             });
+        }
 
-            await newReport.save();
-
-            return res.status(201).json({
-                success: true,
-                message: 'Report successfully submitted'
-            });
-
-        }catch (error) {
-            console.error('Error in addReport:', error);
+        // Preveri veljavne vrednosti
+        const validTypes = ["mixed", "recyclable", "organic", "construction", "hazardous"];
+        const validStatuses = ["reported", "in_progress", "cleaned"];
+        const validSeverities = ["low", "medium", "high"];
         
-            if (savedImagePath) {
-                try {
-                    const filename = path.basename(savedImagePath);
-                    await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
-                } catch (unlinkError) {
-                    console.error('Error deleting image:', unlinkError);
-                }
+        console.log(location, description, type, status, severity);
+        console.log(validTypes);
+
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid report type' 
+            });
+        }
+
+        // Preveri koordinate
+        const [longitude, latitude] = parsedLocation.coordinates;
+        if (isNaN(longitude) || isNaN(latitude) || 
+            longitude < -180 || longitude > 180 || 
+            latitude < -90 || latitude > 90) {
+            return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid coordinates' 
+            });
+        }
+
+        // Obdelaj sliko če obstaja
+        if (image) {
+            const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+            if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
             }
 
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Internal server error'
-            });
+            const ext = path.extname(image.originalname);
+            const filename = `report_${Date.now()}${ext}`;
+            const filePath = path.join(uploadDir, filename);
+
+            await fs.promises.copyFile(image.path, filePath);
+            savedImagePath = `/uploads/${filename}`;
+            await fs.promises.unlink(image.path);
+        }
+
+        // Ustvari nov report
+        const newReport = new ReportModel({
+            location: {
+            type: parsedLocation.type,
+            coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            },
+            reportedBy: req.user._id, // Uporabi ID prijavljenega uporabnika
+            description: description || '',
+            type: type,
+            status: status || "reported",
+            severity: severity || "medium",
+            image: savedImagePath
+        });
+
+        await newReport.save();
+
+        return res.status(201).json({
+            success: true,
+            message: 'Report successfully submitted',
+            data: newReport
+        });
+
+        } catch (error) {
+        console.error('Error in addReport:', error);
+        
+        // Počisti naloženo sliko če je prišlo do napake
+        if (savedImagePath) {
+            try {
+            const filename = path.basename(savedImagePath);
+            await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
+            } catch (unlinkError) {
+            console.error('Error deleting image:', unlinkError);
+            }
+        }
+
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
         }
     }
 
