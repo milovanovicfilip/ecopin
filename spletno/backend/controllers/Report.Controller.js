@@ -363,4 +363,43 @@ export default class ReportController{
                 });
             }
         }
+
+        updateStatus = async function(req, res) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            
+            if (!["reported", "in_progress", "cleaned"].includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid status value' 
+            });
+            }
+            
+            const report = await ReportModel.findByIdAndUpdate(
+            id,
+            { status },
+            { new: true }
+            );
+            
+            if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Report not found'
+            });
+            }
+            
+            return res.status(200).json({
+            success: true,
+            message: 'Report status updated',
+            data: report
+            });
+        } catch (error) {
+            console.error('Error in updateStatus:', error);
+            return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+            });
+        }
+    }
 }
