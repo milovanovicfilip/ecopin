@@ -111,15 +111,8 @@ export default class UserController {
     );
 
     // Find and update user in MongoDB
-    const user = await User.findOneAndUpdate(
-      { auth0Id: userInfo.data.sub },
-      { 
-        $set: { 
-          'metadata.emailVerified': userInfo.data.email_verified || false 
-        } 
-      },
-      { new: true } // Return the updated document
-    );
+    const user = await User.findOne(
+      { auth0Id: userInfo.data.sub });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found in database' });
@@ -129,9 +122,6 @@ export default class UserController {
       accessToken: authResponse.data.access_token,
       idToken: authResponse.data.id_token,
       expiresIn: authResponse.data.expires_in,
-      user: {
-        emailVerified: user.metadata.emailVerified
-      }
     });
 
   } catch (error) {
