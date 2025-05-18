@@ -9,7 +9,7 @@ var poiSchema = new Schema({
     },
     "location": {
         type: {
-            enum: String,
+            type: String,
             enum: ["Point"],
             default: "Point"
         },
@@ -29,4 +29,5 @@ poiSchema.statics.findByType = async function(type) {
     return await this.find({ type }).exec();
 };
 
-mongoose.exports = mongoose.model("poi", poiSchema, "poi");
+const Poi = mongoose.model("poi", poiSchema, "poi");
+export default Poi;

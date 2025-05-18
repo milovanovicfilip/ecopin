@@ -1,205 +1,177 @@
-import * as dotenv from "dotenv";
+import User from '../models/User.Model.js';
+import { ManagementClient } from 'auth0';
+import axios from 'axios';
+import { expressjwt } from 'express-jwt';
+import jwks from 'jwks-rsa';
+import dotenv from 'dotenv';
+
 dotenv.config();
 
-import crypto from "crypto";
-//import { User } from "../Models/User.Model.js";
-import { decodeJWT, genJWT } from "../utils/jwt.js";
+export default class UserController {
+  constructor() {
+    this.auth0 = new ManagementClient({
+      domain: process.env.AUTH0_DOMAIN,
+      clientId: process.env.AUTH0_CLIENT_ID,
+      clientSecret: process.env.AUTH0_CLIENT_SECRET,
+      scope: 'read:users update:users'
+    });
 
-function generateRandom(length) {
-    return crypto.randomBytes(Math.ceil(length / 2))
-        .toString('hex')
-        .slice(0, length);
+    this.checkJwt = expressjwt({
+        secret: jwks.expressJwtSecret({
+            cache: true,
+            rateLimit: true,
+            jwksRequestsPerMinute: 5,
+            jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`
+        }),
+        audience: process.env.AUTH0_AUDIENCE,
+        issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+        algorithms: ['RS256']
+    });
+
+  }
+
+  // Register new user
+  async register(req, res) {
+    try {
+      const { email, password, name, lastname, username } = req.body;
+
+        const auth0User = await this.auth0.createUser({
+            connection: 'Username-Password-Authentication',
+            email,
+            password,
+            username, // ← Critical: Auth0 needs this to allow username logins
+            given_name: name,
+            family_name: lastname,
+        });
+
+      // Create MongoDB user
+      const user = await User.create({
+        auth0Id: auth0User.user_id,
+        email,
+        name,
+        lastname,
+        username,
+        metadata: {
+          auth0Provider: auth0User.user_id.split('|')[0],
+          emailVerified: false
+        }
+      });
+
+      res.status(201).json({
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        lastname: user.lastname,
+        username: user.username
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async login(req, res) {
+  try {
+    const { email, password, username } = req.body;
+    const origin = req.headers.origin || req.headers.referer || 'http://localhost:3000';
+
+    if ((!email && !username) || !password) {
+      return res.status(400).json({ error: 'Email/username and password required' });
+    }
+
+    // Auth0 token request
+    const authResponse = await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+      {
+        grant_type: 'http://auth0.com/oauth/grant-type/password-realm',
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        username: email || username,
+        password: password,
+        audience: process.env.AUTH0_AUDIENCE,
+        scope: 'openid profile email',
+        realm: 'Username-Password-Authentication'
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': origin,
+          'Referer': origin
+        }
+      }
+    );
+
+    // Get user info from Auth0
+    const userInfo = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${authResponse.data.access_token}`
+        }
+      }
+    );
+
+    // Find and update user in MongoDB
+    const user = await User.findOneAndUpdate(
+      { auth0Id: userInfo.data.sub },
+      { 
+        $set: { 
+          'metadata.emailVerified': userInfo.data.email_verified || false 
+        } 
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+
+    res.json({
+      accessToken: authResponse.data.access_token,
+      idToken: authResponse.data.id_token,
+      expiresIn: authResponse.data.expires_in,
+      user: {
+        emailVerified: user.metadata.emailVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({
+      error: error.response?.data?.error_description || 'Login failed',
+      details: error.response?.data
+    });
+  }
 }
 
-function Hash(data, salt){
-    const pepper = process.env.PEPPER;
-    let cypher = data + salt;
+  // Get current user
+  async getCurrentUser(req, res) {
+    try {
+      const user = await User.findOne({ auth0Id: req.user.sub });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 
-    for (let i = 0; i < 1000; i++) {
-        cypher = crypto.createHash('sha512', pepper).update(cypher).digest('base64');
+  // Add points to user
+    async addPoints(req, res) {
+    try {
+        const user = await User.findOne({ auth0Id: req.user.sub });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const { points } = req.body;
+        if (typeof points !== 'number') {
+        return res.status(400).json({ error: 'Points must be a number' });
+        }
+
+        await user.addPoints(points);
+
+        res.json({ message: 'Points added successfully', totalPoints: user.points });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
     }
 
-    return cypher;
-}
-
-export default class UserController{
-    constructor(){}
-
-    addUser = async function (request, response) {
-        try{
-            const {username, password, email, name, lastname} = request.body;
-
-            if(!username || !password || !email || !name || !lastname){
-                return response.status(400).json({message: 'All fields must be provided'});
-            }
-
-            const existingUser = await User.findOne({ 
-                $or: [{ username }, { email }] 
-            });
-
-            if(existingUser){
-                return res.status(409).json({ 
-                    message: 'Username or email already in use' 
-                });
-            }
-
-            const salt = generateRandom(32);
-            const hashedPassword = Hash(password,salt);
-            const initials = `${name[0]}${lastname[0]}`.toUpperCase();
-
-            const user = await User.create({
-                username,
-                password: hashedPassword,
-                email,
-                name,
-                lastname,
-                avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${initials}&backgroundColor=00897b,00acc1,039be5,1e88e5,3949ab&fontWeight=600`,
-                salt
-            });
-
-            return res.status(201).json({
-                message: "User created successfully",
-                user
-            });
-        }
-        catch(error){
-            console.log(error);
-            return response.status(500).json({message: 'An unexpected error occurred'});
-        }
-    }
-
-    removeUser = async function (request, response) {
-        try {
-            const token = req.headers.authorization?.split(' ')[1];
-            if (!token) {
-                return res.status(401).json({ 
-                    message: "Authorization token required" 
-                });
-            }
-
-            const decoded = decodeJWT(token);
-            if (!decoded) {
-                return res.status(401).json({ 
-                    message: "Invalid or expired token" 
-                });
-            }
-
-            await User.findByIdAndDelete(decoded.id);
-
-            return res.status(200).json({ 
-                message: "User account deleted successfully" 
-            });
-        } catch(error) {
-            console.log(error);
-            return response.status(500).json({message: "An unexpected error occurred"});
-        }
-    }
-
-    loginUser = async function (request,response) {
-        try {
-            const { username, password } = request.body;
-
-            if(!username || !password){
-                return response.status(400).json({message:"Must enter both username and password"});
-            }
-
-            const user = await User.findOne({email:email});
-
-            if(!user){
-                return response.status(404).json({message:"Non existing user"});
-            }
-
-            const hashed = Hash(password, user.salt);
-
-            if(hashed !== user.password){
-                return response.status(400).json({message:"Wrong password"});
-            }
-
-            return response.status(200).json({message:"User sucessfully logged in", token: genJWT(user.id)});
-        } catch(error) {
-            console.error(error);
-            return response.status(500).json({message: "An unexpected error occurred"});
-        }
-    }
-
-    logoutUser = async function (request,response) {
-        try {
-            response.clearCookie("token");
-            response.clearCookie("logged_in");
-            return response.status(200).json({message:"User sucessfully logged out"});
-        } catch (error) {
-            console.error(error);
-            return response.status(500).json({message: "An unexpected error occurred"});
-        }
-    }
-
-    updateProfile = async function (request,response) {
-        try {
-            const id = decodeJWT(request.cookies["token"]);
-
-            if (!id) {
-                return response.status(400).json({message: "Must provide user id"});
-            }
-
-            const { username, password, email} = request.body;
-
-            const user = await User.findById(id);
-
-            if (!user) {
-                return response.status(404).json({message:"User not found"});
-            }
-
-            const newData = {};
-
-            if (username) {
-                newData.username = username;
-            }
-
-            if (password) {
-                newData.password = Hash(password, user.salt);
-            }
-
-            if (email) {
-                newData.email = email;
-            }
-
-            await User.findOneAndUpdate(user.id, newData);
-
-            return response.status(200).json({message: "Sucessfully updated profile"});
-        } catch(error) {
-            console.error(error);
-            return response.status(500).json({message: "An unexpected error occurred"});
-        }
-    }
-
-    getUserPosts = async function (request,response) {
-        try{
-            const id=request.params.id;
-
-            const user = await User.findById(id);
-            const posts = user.posts;
-
-            return response.status(200).json(posts);
-        }
-        catch(error){
-            console.log(error);
-            return response.status(500).json({message: 'An unexpexted error occurred'});
-        }
-    }
-
-    getUserData = async function (request,response) {
-        try{
-            const id= decodeJWT(request.params.id);
-
-            
-            const user = await User.findById(id, '-password -salt');
-            
-            // console.log(user);
-            return response.status(200).json(user);
-        }
-        catch(error){
-            console.log(error);
-            return response.status(500).json({message: 'An unexpexted error occurred'});
-        }
-    }
 }
