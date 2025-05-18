@@ -67,5 +67,5 @@ reportSchema.statics.findWithinPolygon = async function(polygonCoordinates, type
     return await this.find(query);
 };
 
-const ReportModel = mongoose.model("report", reportSchema, "report");
+const ReportModel = mongoose.model("reports", reportSchema);
 export default ReportModel;

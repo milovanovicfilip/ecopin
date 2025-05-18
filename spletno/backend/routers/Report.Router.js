@@ -1,5 +1,4 @@
 import express, {Router} from 'express';
-import { authoriseUser } from '../utils/jwt.js';
 import ReportController from '../controllers/Report.Controller.js'
 import multer from 'multer';
 import path from 'path'
@@ -7,7 +6,7 @@ import path from 'path'
 const upload = multer({ 
     storage: multer.diskStorage({
         destination: function (req, file, cb) {
-            cb(null, 'temp/') // Privremeni folder
+            cb(null, 'temp/')
         },
         filename: function (req, file, cb) {
             cb(null, `report_${Date.now()}${path.extname(file.originalname)}`)

@@ -1,5 +1,4 @@
 import express, {Router} from 'express';
-import { authoriseUser } from '../utils/jwt.js';
 import PoiController from '../controllers/Poi.Controller.js'
 
 const router = express.Router();

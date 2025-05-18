@@ -1,38 +1,3 @@
-<<<<<<< HEAD
-import * as dotenv from "dotenv";
-dotenv.config();
-
-import jwt from "jsonwebtoken";
-
-export const authoriseUser = function(req, res, next){
-    const token = req.headers.authorization;
-
-    if(!token){
-        return res.status(401).json({message: 'Invalid token'});
-    }
-
-    try{
-        jwt.verify(token, process.env.JWT_SECRET);
-        next();
-    }
-    catch(error){
-        res.status(401).json({message: 'Invalid token'});
-    }
-}
-
-export const genJWT = function(data){
-    return jwt.sign(data, process.env.JWT_SECRET);
-}
-
-export const decodeJWT = function(token){
-    try{
-        return jwt.verify(token, process.env.JWT_SECRET);
-    }
-    catch(error){
-        throw new Error('Invalid JWT');
-    }
-}
-=======
 import { expressjwt } from 'express-jwt';
 import jwks from 'jwks-rsa';
 import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from './roles.js';
@@ -151,4 +116,3 @@ export const checkOwnership = (model, paramName = 'id', ownerField = 'reportedBy
     }
   };
 };
->>>>>>> b3f5836170cc7c1c11b8b9dcb2383a6d8ab5f882

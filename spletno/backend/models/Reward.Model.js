@@ -21,4 +21,4 @@ var rewardSchema = new Schema({
  
 }, { timestamps: true } );
 
-mongoose.exports = mongoose.model("reward", rewardSchema, "reward");
+mongoose.exports = mongoose.model("rewards", rewardSchema);

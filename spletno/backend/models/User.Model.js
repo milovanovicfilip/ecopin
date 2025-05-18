@@ -97,5 +97,5 @@ userSchema.statics.findOrCreate = async function(auth0Payload) {
   });
 };
 
-const User = mongoose.model('user', userSchema, 'user');
+const User = mongoose.model('users', userSchema);
 export default User;
