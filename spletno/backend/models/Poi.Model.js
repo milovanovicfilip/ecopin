@@ -18,9 +18,10 @@ var poiSchema = new Schema({
         required: true,
         enum: ["eco-island", "disposal-site", "bin"]
     },
-    "address": String,
-    "city": String,
-    "description": String
+    "lastChanged": {
+        type: Date,
+        default: Date.now
+    }
 }, { timestamps: true });
 
 poiSchema.index({ location: '2dsphere' });
