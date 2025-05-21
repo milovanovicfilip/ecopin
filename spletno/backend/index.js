@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'http://0.0.0.0:3000',
   credentials: true
 }));
 
@@ -42,7 +42,7 @@ mongoose.connect(process.env.MONGODB_URI)
     });
 
 
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
   console.log(`Server running on port http://localhost:${PORT}`);
   console.log(`Auth0 Domain: ${process.env.AUTH0_DOMAIN}`);
 });
