@@ -1,5 +1,5 @@
 var city_name = "Maribor";
-var lat = 46.0500;
+var lat = (46.0500+3.4, 45.03);
 var lng = 14.5000;
 
 function create_report(title, img, desc, x, y) {
@@ -25,6 +25,24 @@ city city_name {
         46.0520,
         14.5015
     );
+
+    for i in 1 to 5 {
+        poi "Smetnjak" + i {
+            location(46.23 + i * 0.001, 14.51)
+            type("bin")
+        }
+    }
+
+    array bins<poi> [
+        (poi "name"{
+            location(46.2344, 14.5634)
+            type("bin")
+        }),
+        (poi "name"{
+            location(46.2344, 14.5634)
+            type("bin")
+        })
+    ];
 
     group "EcoGroup" {
         user("Miha", "cleaner");

@@ -57,10 +57,10 @@ interface DFA {
 }
 
 object LanguageAutomaton : DFA {
-    override val states = (1..22).toSet()
+    override val states = (1..24).toSet()
     override val alphabet = 0..255
     override val startState = 1
-    override val finalStates = setOf(2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)
+    override val finalStates = setOf(2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)
 
     private val numberOfStates = states.max() + 1
     private val numberOfCodes = alphabet.max() + 1
@@ -88,6 +88,9 @@ object LanguageAutomaton : DFA {
     }
 
     init {
+        setTransition(1, '[', 22); setSymbol(22, LT_SYMBOL) // Using LT_SYMBOL for [ temporarily
+        setTransition(1, ']', 23); setSymbol(23, GT_SYMBOL)
+
         for (c in '0'..'9') {
             setTransition(1, c, 2)
             setTransition(2, c, 2)
@@ -216,19 +219,19 @@ fun name(symbol: Int): String = when (symbol) {
     NUMBER_SYMBOL -> "NUMBER"
     STRING_SYMBOL -> "STRING"
     IDENTIFIER_SYMBOL -> "IDENTIFIER"
-    EQUAL_SYMBOL -> "="
-    SEMI_SYMBOL -> ";"
-    COMMA_SYMBOL -> ","
-    LPAREN_SYMBOL -> "("
-    RPAREN_SYMBOL -> ")"
-    LBRACE_SYMBOL -> "{"
-    RBRACE_SYMBOL -> "}"
-    LT_SYMBOL -> "<"
-    GT_SYMBOL -> ">"
-    PLUS_SYMBOL -> "+"
-    MINUS_SYMBOL -> "-"
-    TIMES_SYMBOL -> "*"
-    DIVIDE_SYMBOL -> "/"
+    EQUAL_SYMBOL -> "equal"
+    SEMI_SYMBOL -> "semicolon"
+    COMMA_SYMBOL -> "comma"
+    LPAREN_SYMBOL -> "lparen"
+    RPAREN_SYMBOL -> "rparen"
+    LBRACE_SYMBOL -> "lbrace"
+    RBRACE_SYMBOL -> "rbrace"
+    LT_SYMBOL -> "lt"
+    GT_SYMBOL -> "gt"
+    PLUS_SYMBOL -> "plus"
+    MINUS_SYMBOL -> "minus"
+    TIMES_SYMBOL -> "times"
+    DIVIDE_SYMBOL -> "divide"
     VAR_SYMBOL -> "var"
     ARRAY_SYMBOL -> "array"
     FUNCTION_SYMBOL -> "function"
