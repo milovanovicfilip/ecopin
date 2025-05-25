@@ -1,3 +1,4 @@
+import jdk.jfr.internal.EventWriterKey.block
 import java.io.FileInputStream
 import java.io.InputStream
 
@@ -43,6 +44,8 @@ const val AUTHORITY_SYMBOL = 36
 const val IF_SYMBOL = 37
 const val FOR_SYMBOL = 38
 const val TO_SYMBOL = 39
+// IN
+const val IN_SYMBOL = 40
 
 const val EOF = -1
 const val NEWLINE = '\n'.code
@@ -163,7 +166,8 @@ val keywords = mapOf(
     "authority" to AUTHORITY_SYMBOL,
     "if" to IF_SYMBOL,
     "for" to FOR_SYMBOL,
-    "to" to TO_SYMBOL
+    "to" to TO_SYMBOL,
+    "in" to IN_SYMBOL // IN
 )
 
 data class Token(val symbol: Int, val lexeme: String, val row: Int, val column: Int)
@@ -250,6 +254,7 @@ fun name(symbol: Int): String = when (symbol) {
     IF_SYMBOL -> "if"
     FOR_SYMBOL -> "for"
     TO_SYMBOL -> "to"
+    IN_SYMBOL -> "in" // IN
     else -> "UNKNOWN"
 }
 
@@ -261,7 +266,388 @@ fun printTokens(scanner: Scanner) {
     }
 }
 
+class Parser(private val scanner: Scanner) {
+    private var currentToken: Token = scanner.getToken()
+
+    fun parse(): Boolean {
+        program()
+        return currentToken.symbol == EOF_SYMBOL
+    }
+
+    private fun match(symbol: Int) {
+        if (currentToken.symbol == symbol) {
+            currentToken = scanner.getToken()
+        } else {
+            throw Error("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected ${name(symbol)}, found ${name(currentToken.symbol)}")
+        }
+    }
+
+    private fun program() {
+        statementList()
+    }
+
+    private fun statementList() {
+        when (currentToken.symbol) {
+            EOF_SYMBOL, RBRACE_SYMBOL -> return
+            else -> {
+                statement()
+                statementList()
+            }
+        }
+    }
+
+    private fun statement() {
+        when (currentToken.symbol) {
+            VAR_SYMBOL -> variableDeclaration()
+            ARRAY_SYMBOL -> arrayDeclaration()
+            FUNCTION_SYMBOL -> functionDefinition()
+            IDENTIFIER_SYMBOL -> functionCall()
+            CITY_SYMBOL -> cityBlock()
+            FOR_SYMBOL -> forLoop()
+            IF_SYMBOL -> ifStatement()
+        }
+    }
+
+    private fun variableDeclaration() {
+        match(VAR_SYMBOL)
+        match(IDENTIFIER_SYMBOL)
+        match(EQUAL_SYMBOL)
+        expression()
+        match(SEMI_SYMBOL)
+    }
+
+    private fun arrayDeclaration() {
+        match(ARRAY_SYMBOL)
+        match(IDENTIFIER_SYMBOL)
+        match(LT_SYMBOL)
+        type()
+        match(GT_SYMBOL)
+        match(LBRACE_SYMBOL)
+        expressionList()
+        match(RBRACE_SYMBOL)
+        match(SEMI_SYMBOL)
+    }
+
+    private fun type() {
+        when (currentToken.symbol) {
+            POI_SYMBOL, USER_SYMBOL, STRING_SYMBOL, NUMBER_SYMBOL -> match(currentToken.symbol)
+            else -> throw Error("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected type, found ${name(currentToken.symbol)}")
+        }
+    }
+
+    private fun expressionList() {
+        when (currentToken.symbol) {
+            RBRACE_SYMBOL -> return
+            else -> {
+                expression()
+                expressionListTail()
+            }
+        }
+    }
+
+    private fun expressionListTail() {
+        when (currentToken.symbol) {
+            COMMA_SYMBOL -> {
+                match(COMMA_SYMBOL)
+                expression()
+                expressionListTail()
+            }
+        }
+    }
+
+    private fun functionDefinition() {
+        match(FUNCTION_SYMBOL)
+        match(IDENTIFIER_SYMBOL)
+        match(LPAREN_SYMBOL)
+        parameterList()
+        match(RPAREN_SYMBOL)
+        match(LBRACE_SYMBOL)
+        statementList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun parameterList() {
+        when (currentToken.symbol) {
+            RPAREN_SYMBOL -> return
+            else -> {
+                match(IDENTIFIER_SYMBOL)
+                parameterListTail()
+            }
+        }
+    }
+
+    private fun parameterListTail() {
+        when (currentToken.symbol) {
+            COMMA_SYMBOL -> {
+                match(COMMA_SYMBOL)
+                match(IDENTIFIER_SYMBOL)
+                parameterListTail()
+            }
+        }
+    }
+
+    private fun functionCall() {
+        match(IDENTIFIER_SYMBOL)
+        match(LPAREN_SYMBOL)
+        argumentList()
+        match(RPAREN_SYMBOL)
+        match(SEMI_SYMBOL)
+    }
+
+    private fun argumentList() {
+        when (currentToken.symbol) {
+            RPAREN_SYMBOL -> return
+            else -> {
+                expression()
+                argumentListTail()
+            }
+        }
+    }
+
+    private fun argumentListTail() {
+        when (currentToken.symbol) {
+            COMMA_SYMBOL -> {
+                match(COMMA_SYMBOL)
+                expression()
+                argumentListTail()
+            }
+        }
+    }
+
+    private fun cityBlock() {
+        match(CITY_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        blockList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun blockList() {
+        when (currentToken.symbol) {
+           RBRACE_SYMBOL -> return
+           else -> {
+               this.block()
+               blockList()
+           }
+        }
+    }
+
+    private fun block() {
+        when (currentToken.symbol) {
+            POI_SYMBOL -> poiBlock()
+            REPORT_SYMBOL -> reportBlock()
+            GROUP_SYMBOL -> groupBlock()
+            EVENT_SYMBOL -> eventBlock()
+            else -> throw Error("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected block, found ${name(currentToken.symbol)}")
+        }
+    }
+
+    private fun poiBlock() {
+        match(POI_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        locationStatement()
+        typeStatement()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun reportBlock() {
+        match(REPORT_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        photoStatement()
+        noteStatement()
+        locationStatement()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun groupBlock() {
+        match(GROUP_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        userStatementList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun userStatementList() {
+        when (currentToken.symbol) {
+            RBRACE_SYMBOL -> return
+            else -> {
+                userStatement()
+                userStatementList()
+            }
+        }
+    }
+
+    private fun eventBlock() {
+        match(EVENT_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        userStatement()
+        groupBlock()
+        locationStatement()
+        timeStatement()
+        authorityStatement()
+        sponsorStatement()
+        utilityOpt()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun utilityOpt() {
+        when (currentToken.symbol) {
+            UTILITY_SYMBOL -> utilityStatement()
+        }
+    }
+
+    private fun userStatement() {
+        match(USER_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(COMMA_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+        match(SEMI_SYMBOL)
+    }
+
+    private fun photoStatement() {
+        match(PHOTO_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(COMMA_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun noteStatement() {
+        match(NOTE_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun sponsorStatement() {
+        match(SPONSOR_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun utilityStatement() {
+        match(UTILITY_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun locationStatement() {
+        match(LOCATION_SYMBOL)
+        match(LPAREN_SYMBOL)
+        expression()
+        match(COMMA_SYMBOL)
+        expression()
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun typeStatement() {
+        match(TYPE_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun timeStatement() {
+        match(TIME_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun authorityStatement() {
+        match(AUTHORITY_SYMBOL)
+        match(LPAREN_SYMBOL)
+        match(STRING_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+
+    private fun forLoop() {
+        match(FOR_SYMBOL)
+        match(IDENTIFIER_SYMBOL)
+        match(IN_SYMBOL)
+        match(NUMBER_SYMBOL)
+        match(TO_SYMBOL)
+        match(NUMBER_SYMBOL)
+        match(LBRACE_SYMBOL)
+        statementList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun ifStatement() {
+        match(IF_SYMBOL)
+        expression()
+        match(LBRACE_SYMBOL)
+        statementList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun expression() {
+        term()
+        expressionTail()
+    }
+
+    private fun expressionTail() {
+        when (currentToken.symbol) {
+            PLUS_SYMBOL, MINUS_SYMBOL, TIMES_SYMBOL, DIVIDE_SYMBOL -> {
+                operator()
+                term()
+                expressionTail()
+            }
+        }
+    }
+
+    private fun term() {
+        when (currentToken.symbol) {
+            NUMBER_SYMBOL -> match(NUMBER_SYMBOL)
+            STRING_SYMBOL -> match(STRING_SYMBOL)
+            IDENTIFIER_SYMBOL -> match(IDENTIFIER_SYMBOL)
+            LPAREN_SYMBOL -> {
+                match(LPAREN_SYMBOL)
+                match(NUMBER_SYMBOL)
+                match(COMMA_SYMBOL)
+                match(NUMBER_SYMBOL)
+                match(RPAREN_SYMBOL)
+            }
+            else -> throw Error("Invalid term at ${currentToken.row}:${currentToken.column}")
+        }
+    }
+
+    private fun operator() {
+        when (currentToken.symbol) {
+            PLUS_SYMBOL -> match(PLUS_SYMBOL)
+            MINUS_SYMBOL -> match(MINUS_SYMBOL)
+            TIMES_SYMBOL -> match(TIMES_SYMBOL)
+            DIVIDE_SYMBOL -> match(DIVIDE_SYMBOL)
+            else -> throw Error("Invalid operator at ${currentToken.row}:${currentToken.column}")
+        }
+    }
+}
+
 fun main() {
-    val input = FileInputStream("src/test.txt")
-    printTokens(Scanner(LanguageAutomaton, input))
+    try{
+        var input = FileInputStream("src/test.txt")
+        var scanner = Scanner(LanguageAutomaton, input)
+
+        printTokens(scanner);
+        println();
+
+        input = FileInputStream("src/test.txt")
+        scanner = Scanner(LanguageAutomaton, input)
+        val parser = Parser(scanner);
+        if (parser.parse()) {
+            println("accept")
+        } else {
+            println("reject")
+        }
+    }catch (e:Exception){
+        println("reject")
+    }
 }
