@@ -15,27 +15,8 @@ Statement ::= VariableDeclaration
 VariableDeclaration ::= "var" Identifier "=" Expression ";"
 
 ArrayDeclaration ::= "array" Identifier "<" Type ">" "[" ExpressionList "]" ";"
+Type ::= "poi" | "user" | "string" | "number"
 
-ExpressionList ::= Expression ExpressionListTail | ε
-ExpressionListTail ::= "," Expression ExpressionListTail | ε
-
-FunctionDefinition ::= "function" Identifier "(" ParameterList ")" "{" { StatementList } "}"
-
-ParameterList ::= Identifier ParameterListTail | ε
-ParameterListTail ::= "," Identifier ParameterListTail | ε
-
-FunctionCall ::= Identifier "(" ArgumentList ")" ";"
-
-ArgumentList ::= Expression ArgumentListTail | ε
-ArgumentListTail ::= "," Expression ArgumentListTail | ε
-
-CityBlock ::= "city" String "{" BlockList "}"
-
-BlockList ::= Block BlockList | ε
-
-ForLoop ::= "for" Identifier "in" Number "to" Number "{" StatementList "}"
-
-IfStatement ::= "if" Expression "{" StatementList "}"
 
 Expression ::= Term ExpressionTail
 ExpressionTail ::= Operator Term ExpressionTail | ε
@@ -44,57 +25,80 @@ Term ::= Number
         | String
         | Identifier
         | Coordinates
+        | "(" Expression ")"
+        | Block
 
 Operator ::= "+" | "-" | "*" | "/"
 
-Type ::= "poi" | "user" | "string" | "number"
-```
-## Bloki
-```
+ExpressionList ::= Expression ExpressionListTail | ε
+ExpressionListTail ::= "," Expression ExpressionListTail | ε
+
+FunctionDefinition ::= "function" Identifier "(" ParameterList ")" "{" InnerList "}"
+
+InnerList ::= Inner InnerList | ε
+
+Inner ::= VariableDeclaration
+            | ArrayDeclaration
+            | FunctionDefinition
+            | FunctionCall
+            | ForLoop
+            | IfStatement
+            | Block
+            
+ParameterList ::= Identifier ParameterListTail | ε
+ParameterListTail ::= "," Identifier ParameterListTail | ε
+
+FunctionCall ::= "call" Identifier "(" ArgumentList ")" ";"
+
+ArgumentList ::= Expression ArgumentListTail | ε
+ArgumentListTail ::= "," Expression ArgumentListTail | ε
+
+CityBlock ::= "city" Name "{" InnerList "}"
+
+Name ::= String | Identifier
+
+ForLoop ::= "for" Identifier "in" Number "to" Number "{" InnerList "}"
+
+IfStatement ::= "if" Expression "{" InnerList "}"
+
 Block ::= PoiBlock
         | ReportBlock
         | GroupBlock
         | EventBlock
 
-PoiBlock ::= "poi" String "{" LocationStatement TypeStatement "}"
+PoiBlock ::= "poi" Expression "{" LocationStatement TypeStatement "}"
 
-ReportBlock ::= "report" String "{" PhotoStatement NoteStatement LocationStatement "}
+ReportBlock ::= "report" Expression "{" PhotoStatement NoteStatement LocationStatement "}
 
-GroupBlock ::= "group" String "{" UserStatementList "}"
+GroupBlock ::= "group" Expression "{" UserStatementList "}"
 
 UserStatementList ::= UserStatement UserStatementList | ε
 
-EventBlock ::= "event" String "{" UserStatement GroupBlock LocationStatement TimeStatement AuthorityStatement SponsorStatement UtilityOpt "}"
+EventBlock ::= "event" Expression "{" UserStatement GroupBlock LocationStatement TimeStatement AuthorityStatement SponsorStatement UtilityOpt "}"
 
 UtilityOpt ::= UtilityStatement | ε
-```
-## Statements / Konstrukti
-```
-UserStatement ::= "user" "(" String "," String ")" ";"
 
-PhotoStatement ::= "photo" "(" FileName "," String ")"
+UserStatement ::= "user" "(" Name "," Name ")"
 
-NoteStatement ::= "note" "(" String ")"
+PhotoStatement ::= "photo" "(" Name "," Name ")"
 
-SponsorStatement ::= "sponsor" "(" String ")"
+NoteStatement ::= "note" "(" Name ")"
 
-UtilityStatement ::= "utility" "(" String ")"
+SponsorStatement ::= "sponsor" "(" Name ")"
 
-LocationStatement ::= "location" "(" Expression "," Expression ")"
+UtilityStatement ::= "utility" "(" Name ")"
 
-TypeStatement ::= "type" "(" String ")"
+LocationStatement ::= "location" "(" Coordinates ")"
 
-TimeStatement ::= "time" "(" String ")"
+TypeStatement ::= "type" "(" Name ")"
 
-AuthorityStatement ::= "authority" "(" String ")"
+TimeStatement ::= "time" "(" Name ")"
 
-Coordinates ::= "(" Number ", " Number ")"
-```
+AuthorityStatement ::= "authority" "(" Name ")"
 
-## Basic Components / Osnovne enote
-```
+Coordinates ::= "coordinates" "(" Expression ", " Expression ")"
+
 Identifier ::= /[a-zA-Z][a-zA-Z0-9_]*/
-FileName ::= /[a-zA-Z0-9_\-]+\.(jpg|jpeg|png|gif|bmp|webp|tiff)/i
 String ::= /"([^"\\]|\\.)*"/
 Number ::= /-?[0-9]+(\.[0-9]+)?/
 ```
