@@ -1,24 +1,24 @@
 var city_name = "Maribor";
-var lat = (46.0500+3.4, 45.03);
-var lng = 14.5000;
+var lat = coordinates(46.0500+2132, 45.03);
+var lng = (14.5000+23.3)*23;
 
 function create_report(title, img, desc, x, y) {
     report title {
         photo(img, title)
         note(desc)
-        location(x, y)
+        location(coordinates(x, y))
     }
 }
 
 city city_name {
     for i in 0 to 3 {
         poi "Smetnjak_" + i {
-            location(lat + i * 0.001, lng)
+            location(coordinates(lat + i * 0.001, lng))
             type("bin")
         }
     }
 
-    create_report(
+    call create_report(
         "Zamascen asfalt",
         "oil.jpg",
         "Olje razlito ob parkiriscu",
@@ -28,26 +28,26 @@ city city_name {
 
     for i in 1 to 5 {
         poi "Smetnjak" + i {
-            location(46.23 + i * 0.001, 14.51)
+            location(coordinates(46.23 + i * 0.001, 14.51))
             type("bin")
         }
     }
 
     array bins<poi> [
-        (poi "name"{
-            location(46.2344, 14.5634)
+        poi "name"{
+            location(coordinates(46.2344, 14.5634))
             type("bin")
-        }),
-        (poi "name"{
-            location(46.2344, 14.5634)
+        },
+        poi "name"{
+            location(coordinates(46.2344, 14.5634))
             type("bin")
-        })
+        }
     ];
 
     group "EcoGroup" {
-        user("Miha", "cleaner");
-        user("Sara", "cleaner");
-        user("Tina", "reporter");
+        user("Miha", "cleaner")
+        user("Sara", "cleaner")
+        user("Tina", "reporter")
     }
 
     var eventDate = "2025-07-10 09:00";
@@ -56,15 +56,15 @@ city city_name {
         user("Jan", "organizer")
 
         group "EcoGroup" {
-            user("Miha", "cleaner");
-            user("Sara", "cleaner");
-            user("Tina", "reporter");
+            user("Miha", "cleaner")
+            user("Sara", "cleaner")
+            user("Tina", "reporter")
         }
 
-        location(46.0530, 14.5030)
+        location(coordinates(46.0530, 14.5030))
         time(eventDate)
-        utility("Cisto Mesto d.o.o.")
-        sponsor("Zeleni sklad")
         authority("Obcina Maribor")
+        sponsor("Zeleni sklad")
+        utility("Cisto Mesto d.o.o.")
     }
 }
