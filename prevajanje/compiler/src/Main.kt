@@ -90,7 +90,6 @@ object LanguageAutomaton : DFA {
     init {
         setTransition(1, '[', 22); setSymbol(22, LT_SYMBOL) // Using LT_SYMBOL for [ temporarily
         setTransition(1, ']', 23); setSymbol(23, GT_SYMBOL)
-
         for (c in '0'..'9') {
             setTransition(1, c, 2)
             setTransition(2, c, 2)
@@ -101,7 +100,6 @@ object LanguageAutomaton : DFA {
         }
         setSymbol(2, NUMBER_SYMBOL)
         setSymbol(21, NUMBER_SYMBOL)
-
         setTransition(1, '"', 3)
         for (c in 32..126) {
             if (c.toChar() != '"') setTransition(3, c.toChar(), 3)
