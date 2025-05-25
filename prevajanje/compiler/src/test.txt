@@ -1,0 +1,70 @@
+var city_name = "Maribor";
+var lat = coordinates(46.0500+2132, 45.03);
+var lng = (14.5000+23.3)*23;
+
+function create_report(title, img, desc, x, y) {
+    report title {
+        photo(img, title)
+        note(desc)
+        location(coordinates(x, y))
+    }
+}
+
+city city_name {
+    for i in 0 to 3 {
+        poi "Smetnjak_" + i {
+            location(coordinates(lat + i * 0.001, lng))
+            type("bin")
+        }
+    }
+
+    call create_report(
+        "Zamascen asfalt",
+        "oil.jpg",
+        "Olje razlito ob parkiriscu",
+        46.0520,
+        14.5015
+    );
+
+    for i in 1 to 5 {
+        poi "Smetnjak" + i {
+            location(coordinates(46.23 + i * 0.001, 14.51))
+            type("bin")
+        }
+    }
+
+    array bins<poi> [
+        poi "name"{
+            location(coordinates(46.2344, 14.5634))
+            type("bin")
+        },
+        poi "name"{
+            location(coordinates(46.2344, 14.5634))
+            type("bin")
+        }
+    ];
+
+    group "EcoGroup" {
+        user("Miha", "cleaner")
+        user("Sara", "cleaner")
+        user("Tina", "reporter")
+    }
+
+    var eventDate = "2025-07-10 09:00";
+
+    event "Poletna cistilna akcija" {
+        user("Jan", "organizer")
+
+        group "EcoGroup" {
+            user("Miha", "cleaner")
+            user("Sara", "cleaner")
+            user("Tina", "reporter")
+        }
+
+        location(coordinates(46.0530, 14.5030))
+        time(eventDate)
+        authority("Obcina Maribor")
+        sponsor("Zeleni sklad")
+        utility("Cisto Mesto d.o.o.")
+    }
+}
