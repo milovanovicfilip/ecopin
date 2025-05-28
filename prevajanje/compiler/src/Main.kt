@@ -1,55 +1,31 @@
-import jdk.jfr.internal.EventWriterKey.block
 import java.io.FileInputStream
 import java.io.InputStream
-import kotlin.math.exp
 
-// Token symbols
 const val ERROR_STATE = 0
+
 const val EOF_SYMBOL = -1
 const val SKIP_SYMBOL = 0
+
 const val NUMBER_SYMBOL = 1
 const val STRING_SYMBOL = 2
-const val IDENTIFIER_SYMBOL = 3
-const val EQUAL_SYMBOL = 4
-const val SEMI_SYMBOL = 5
-const val COMMA_SYMBOL = 6
-const val LPAREN_SYMBOL = 7
-const val RPAREN_SYMBOL = 8
-const val LBRACE_SYMBOL = 9
-const val RBRACE_SYMBOL = 10
-const val LT_SYMBOL = 11
-const val GT_SYMBOL = 12
-const val PLUS_SYMBOL = 13
-const val MINUS_SYMBOL = 14
-const val TIMES_SYMBOL = 15
-const val DIVIDE_SYMBOL = 16
+const val LPAREN_SYMBOL = 3
+const val RPAREN_SYMBOL = 4
+const val LBRACE_SYMBOL = 5
+const val RBRACE_SYMBOL = 6
+const val SEMI_SYMBOL = 7
+const val COMMA_SYMBOL = 8
+const val CITY_SYMBOL = 9
+const val ROAD_SYMBOL = 10
+const val BUILDING_SYMBOL = 11
+const val ECOISLAND_SYMBOL = 12
+const val BIN_SYMBOL = 13
+const val DISPOSALSITE_SYMBOL = 14
+const val REPORT_SYMBOL = 15
+const val BOX_SYMBOL = 16
+const val LINE_SYMBOL = 17
+const val CIRC_SYMBOL = 18
+const val BEND_SYMBOL = 19
 
-// Keywords
-const val VAR_SYMBOL = 20
-const val ARRAY_SYMBOL = 21
-const val FUNCTION_SYMBOL = 22
-const val CITY_SYMBOL = 23
-const val POI_SYMBOL = 24
-const val REPORT_SYMBOL = 25
-const val GROUP_SYMBOL = 26
-const val EVENT_SYMBOL = 27
-const val USER_SYMBOL = 28
-const val PHOTO_SYMBOL = 29
-const val NOTE_SYMBOL = 30
-const val SPONSOR_SYMBOL = 31
-const val UTILITY_SYMBOL = 32
-const val LOCATION_SYMBOL = 33
-const val TYPE_SYMBOL = 34
-const val TIME_SYMBOL = 35
-const val AUTHORITY_SYMBOL = 36
-const val IF_SYMBOL = 37
-const val FOR_SYMBOL = 38
-const val TO_SYMBOL = 39
-const val IN_SYMBOL = 40
-const val LBRACKET_SYMBOL = 41
-const val RBRACKET_SYMBOL = 42
-const val COORDS_SYMBOL = 43
-const val CALL_SYMBOL = 44
 
 const val EOF = -1
 const val NEWLINE = '\n'.code
@@ -63,19 +39,19 @@ interface DFA {
     val finalStates: Set<Int>
 }
 
-object LanguageAutomaton : DFA {
-    override val states = (1..24).toSet()
-    override val alphabet = 0..255
+object LanguageAutomaton: DFA {
+    override val states = (1 .. 77).toSet() //15
+    override val alphabet = 0 .. 255
     override val startState = 1
-    override val finalStates = setOf(2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)
+    override val finalStates = setOf(2, 4, 6, 10, 14, 22, 32, 35, 48, 54, 58, 61, 65, 69, 70, 71, 72, 73, 74, 75, 76, 77)
 
-    private val numberOfStates = states.max() + 1
-    private val numberOfCodes = alphabet.max() + 1
-    private val transitions = Array(numberOfStates) { IntArray(numberOfCodes) }
-    private val values = Array(numberOfStates) { SKIP_SYMBOL }
+    private val numberOfStates = states.max() + 1 // plus the ERROR_STATE
+    private val numberOfCodes = alphabet.max() + 1 // plus the EOF
+    private val transitions = Array(numberOfStates) {IntArray(numberOfCodes)}
+    private val values = Array(numberOfStates) {SKIP_SYMBOL}
 
     private fun setTransition(from: Int, chr: Char, to: Int) {
-        transitions[from][chr.code + 1] = to
+        transitions[from][chr.code + 1] = to // + 1 because EOF is -1 and the array starts at 0
     }
 
     private fun setTransition(from: Int, code: Int, to: Int) {
@@ -87,102 +63,186 @@ object LanguageAutomaton : DFA {
     }
 
     override fun next(state: Int, code: Int): Int {
-        return transitions[state][code + 1]
+        assert(states.contains(state))
+        assert(alphabet.contains(code))
+        return transitions[state][code+1]
     }
 
     override fun symbol(state: Int): Int {
+        assert(states.contains(state))
         return values[state]
     }
-
     init {
 
-        //NUMBER
-        for (c in '0'..'9') {
-            setTransition(1, c, 2)
-            setTransition(2, c, 2)
+        // NUMBER (decimal in int)
+        for (digit in '0'..'9') {
+            setTransition(1, digit, 2)
+            setTransition(2, digit, 2)
         }
-        setTransition(2, '.', 21)
-        for (c in '0'..'9') {
-            setTransition(21, c, 21)
+        setTransition(2, '.', 3)
+        for (digit in '0'..'9') {
+            setTransition(3, digit, 4)
+            setTransition(4, digit, 4)
         }
         setSymbol(2, NUMBER_SYMBOL)
-        setSymbol(21, NUMBER_SYMBOL)
+        setSymbol(4, NUMBER_SYMBOL)
+
 
         //STRING
-        setTransition(1, '"', 3)
-        for (c in 32..126) {
-            if (c.toChar() != '"')
-                setTransition(3, c.toChar(), 3)
+        setTransition(1, '"', 5)
+        for (code in 32..128) {
+            if (code != '"'.code) {
+                setTransition(5, code.toChar(), 5)
+            }
         }
-        setTransition(3, '"', 4)
-        setSymbol(4, STRING_SYMBOL)
+        setTransition(5, '"', 6)
+        setSymbol(6, STRING_SYMBOL)
 
-        //IDENTIFIER
-        for (c in 'a'..'z') {
-            setTransition(1, c, 5)
-            setTransition(5, c, 5)
-        }
-        for (c in 'A'..'Z') {
-            setTransition(1, c, 5)
-            setTransition(5, c, 5)
-        }
-        for (c in '0'..'9') {
-            setTransition(5, c, 5)
-        }
-        setTransition(1, '_', 5)
-        setTransition(5, '_', 5)
-        setSymbol(5, IDENTIFIER_SYMBOL)
 
-        // Symbols
-        setTransition(1, '=', 6); setSymbol(6, EQUAL_SYMBOL)
-        setTransition(1, ';', 7); setSymbol(7, SEMI_SYMBOL)
-        setTransition(1, ',', 8); setSymbol(8, COMMA_SYMBOL)
-        setTransition(1, '(', 9); setSymbol(9, LPAREN_SYMBOL)
-        setTransition(1, ')', 10); setSymbol(10, RPAREN_SYMBOL)
-        setTransition(1, '{', 11); setSymbol(11, LBRACE_SYMBOL)
-        setTransition(1, '}', 12); setSymbol(12, RBRACE_SYMBOL)
-        setTransition(1, '<', 13); setSymbol(13, LT_SYMBOL)
-        setTransition(1, '>', 14); setSymbol(14, GT_SYMBOL)
-        setTransition(1, '+', 15); setSymbol(15, PLUS_SYMBOL)
-        setTransition(1, '-', 16); setSymbol(16, MINUS_SYMBOL)
-        setTransition(1, '*', 17); setSymbol(17, TIMES_SYMBOL)
-        setTransition(1, '/', 18); setSymbol(18, DIVIDE_SYMBOL)
-        setTransition(1, '[', 22); setSymbol(22, LBRACKET_SYMBOL)
-        setTransition(1, ']', 23); setSymbol(23, RBRACKET_SYMBOL)
+        //CITY
+        setTransition(1, 'c', 7)
+        setTransition(7, 'i', 8)
+        setTransition(8, 't', 9)
+        setTransition(9, 'y', 10)
+        setSymbol(10, CITY_SYMBOL)
+        setTransition(8, 'r', 11)
+        setTransition(11, 'c', 12)
+        setSymbol(12, CIRC_SYMBOL)
 
-        setTransition(1, ' ', 19); setTransition(1, '\t', 19); setTransition(1, '\n', 19); setSymbol(19, SKIP_SYMBOL)
-        setTransition(1, EOF, 20)
-        setSymbol(20, EOF_SYMBOL)
+        //ROAD
+        setTransition(1, 'r', 13)
+        setTransition(13, 'o', 14)
+        setTransition(14, 'a', 15)
+        setTransition(15, 'd', 16)
+        setSymbol(16, ROAD_SYMBOL)
+        setTransition(13, 'e', 17)
+        setTransition(17, 'p', 19)
+        setTransition(18, 'o', 20)
+        setTransition(19, 'r', 21)
+        setTransition(29, 't', 22)
+        setSymbol(22, REPORT_SYMBOL)
+
+        // BUILDING
+        setTransition(1, 'b', 24)
+        setTransition(24, 'u', 25)
+        setTransition(25, 'i', 26)
+        setTransition(26, 'l', 27)
+        setTransition(27, 'd', 28)
+        setTransition(28, 'i', 29)
+        setTransition(29, 'n', 30)
+        setTransition(30, 'g', 31)
+        setSymbol(31, BUILDING_SYMBOL)
+        setTransition(24, 'i', 32)
+        setTransition(32, 'n', 33)
+        setSymbol(33, BIN_SYMBOL)
+        setTransition(24, 'o', 34)
+        setTransition(34, 'x', 35)
+        setSymbol(35, BOX_SYMBOL)
+        setTransition(24, 'e', 36)
+        setTransition(36, 'n', 36)
+        setTransition(100, 'd', 69)
+        setSymbol(69, BEND_SYMBOL)
+
+        // ECO-ISLAND
+        setTransition(1, 'e', 23)
+        setTransition(23, 'c', 24)
+        setTransition(24, 'o', 25)
+        setTransition(25, '-', 26)
+        setTransition(26, 'i', 27)
+        setTransition(27, 's', 28)
+        setTransition(28, 'l', 29)
+        setTransition(29, 'a', 30)
+        setTransition(30, 'n', 31)
+        setTransition(31, 'd', 32)
+        setSymbol(32, ECOISLAND_SYMBOL)
+
+        // BIN
+        setTransition(1, 'b', 33)
+        setTransition(33, 'i', 34)
+        setTransition(34, 'n', 35)
+        setSymbol(35, BIN_SYMBOL)
+
+        // DISPOSAL-SITE
+        setTransition(1, 'd', 36)
+        setTransition(36, 'i', 37)
+        setTransition(37, 's', 38)
+        setTransition(38, 'p', 39)
+        setTransition(39, 'o', 40)
+        setTransition(40, 's', 41)
+        setTransition(41, 'a', 42)
+        setTransition(42, 'l', 43)
+        setTransition(43, '-', 44)
+        setTransition(44, 's', 45)
+        setTransition(45, 'i', 46)
+        setTransition(46, 't', 47)
+        setTransition(47, 'e', 48)
+        setSymbol(48, DISPOSALSITE_SYMBOL)
+
+        // REPORT
+        setTransition(1, 'r', 49)
+        setTransition(49, 'e', 50)
+        setTransition(50, 'p', 51)
+        setTransition(51, 'o', 52)
+        setTransition(52, 'r', 53)
+        setTransition(53, 't', 54)
+        setSymbol(54, REPORT_SYMBOL)
+
+        // LINE
+        setTransition(1, 'l', 55)
+        setTransition(55, 'i', 56)
+        setTransition(56, 'n', 57)
+        setTransition(57, 'e', 58)
+        setSymbol(58, LINE_SYMBOL)
+
+
+        // BOX
+        setTransition(1, 'b', 59)
+        setTransition(59, 'o', 60)
+        setTransition(60, 'x', 61)
+        setSymbol(61, BOX_SYMBOL)
+
+        // CIRC
+        setTransition(1, 'c', 62)
+        setTransition(62, 'i', 63)
+        setTransition(63, 'r', 64)
+        setTransition(64, 'c', 65)
+        setSymbol(65, CIRC_SYMBOL)
+
+        // BEND
+        setTransition(1, 'b', 66)
+        setTransition(66, 'e', 67)
+        setTransition(67, 'n', 68)
+        setTransition(68, 'd', 69)
+        setSymbol(69, BEND_SYMBOL)
+
+
+        //LPAREN, RPAREN, LBRACE, RBRACE, SEMI, COMMA
+        setTransition(1, '(', 70)
+        setTransition(1, ')', 71)
+        setTransition(1, '{', 72)
+        setTransition(1, '}', 73)
+        setTransition(1, ';', 74)
+        setTransition(1, ',', 75)
+
+        //Za WHITESPACE-e in EOF
+        setTransition(1, ' ', 76)
+        setTransition(1, '\n', 76)
+        setTransition(1, '\r', 76)
+        setTransition(1, '\t', 76)
+        setTransition(1, EOF, 77)
+
+        setSymbol(70, LPAREN_SYMBOL)
+        setSymbol(71, RPAREN_SYMBOL)
+        setSymbol(72, LBRACE_SYMBOL)
+        setSymbol(73, RBRACE_SYMBOL)
+        setSymbol(74, SEMI_SYMBOL)
+        setSymbol(75, COMMA_SYMBOL)
+        setSymbol(76, SKIP_SYMBOL)
+        setSymbol(77, EOF_SYMBOL)
     }
 }
 
-val keywords = mapOf(
-    "var" to VAR_SYMBOL,
-    "coordinates" to COORDS_SYMBOL,
-    "array" to ARRAY_SYMBOL,
-    "function" to FUNCTION_SYMBOL,
-    "city" to CITY_SYMBOL,
-    "poi" to POI_SYMBOL,
-    "report" to REPORT_SYMBOL,
-    "group" to GROUP_SYMBOL,
-    "event" to EVENT_SYMBOL,
-    "user" to USER_SYMBOL,
-    "photo" to PHOTO_SYMBOL,
-    "note" to NOTE_SYMBOL,
-    "sponsor" to SPONSOR_SYMBOL,
-    "utility" to UTILITY_SYMBOL,
-    "location" to LOCATION_SYMBOL,
-    "type" to TYPE_SYMBOL,
-    "time" to TIME_SYMBOL,
-    "authority" to AUTHORITY_SYMBOL,
-    "if" to IF_SYMBOL,
-    "for" to FOR_SYMBOL,
-    "to" to TO_SYMBOL,
-    "in" to IN_SYMBOL, // IN
-    "call" to CALL_SYMBOL
-)
-
-data class Token(val symbol: Int, val lexeme: String, val row: Int, val column: Int)
+data class Token(val symbol: Int, val lexeme: String, val startRow: Int, val startColumn: Int)
 
 class Scanner(private val automaton: DFA, private val stream: InputStream) {
     private var last: Int? = null
@@ -207,493 +267,71 @@ class Scanner(private val automaton: DFA, private val stream: InputStream) {
         var state = automaton.startState
         while (true) {
             val nextState = automaton.next(state, code)
-            if (nextState == ERROR_STATE) break
+            if (nextState == ERROR_STATE) break // Longest match
+
             state = nextState
             updatePosition(code)
             buffer.add(code.toChar())
             code = stream.read()
         }
-        last = code
+        last = code // The code following the current lexeme is the first code of the next lexeme
 
         if (automaton.finalStates.contains(state)) {
-            val lexeme = String(buffer.toCharArray())
-            val symbol = when (val baseSymbol = automaton.symbol(state)) {
-                IDENTIFIER_SYMBOL -> keywords[lexeme] ?: IDENTIFIER_SYMBOL
-                else -> baseSymbol
+            val symbol = automaton.symbol(state)
+            return if (symbol == SKIP_SYMBOL) {
+                getToken()
+            } else {
+                val lexeme = String(buffer.toCharArray())
+                Token(symbol, lexeme, startRow, startColumn)
             }
-            return if (symbol == SKIP_SYMBOL) getToken()
-            else Token(symbol, lexeme, startRow, startColumn)
         } else {
-            throw Error("Invalid pattern at $row:$column")
+            throw Error("Invalid pattern at ${row}:${column}")
         }
     }
 }
 
-fun name(symbol: Int): String = when (symbol) {
-    NUMBER_SYMBOL -> "NUMBER"
-    STRING_SYMBOL -> "STRING"
-    IDENTIFIER_SYMBOL -> "IDENTIFIER"
-    EQUAL_SYMBOL -> "equal"
-    SEMI_SYMBOL -> "semicolon"
-    COMMA_SYMBOL -> "comma"
-    LPAREN_SYMBOL -> "lparen"
-    RPAREN_SYMBOL -> "rparen"
-    LBRACE_SYMBOL -> "lbrace"
-    RBRACE_SYMBOL -> "rbrace"
-    LT_SYMBOL -> "lt"
-    GT_SYMBOL -> "gt"
-    PLUS_SYMBOL -> "plus"
-    MINUS_SYMBOL -> "minus"
-    TIMES_SYMBOL -> "times"
-    DIVIDE_SYMBOL -> "divide"
-    VAR_SYMBOL -> "var"
-    ARRAY_SYMBOL -> "array"
-    FUNCTION_SYMBOL -> "function"
-    CITY_SYMBOL -> "city"
-    POI_SYMBOL -> "poi"
-    REPORT_SYMBOL -> "report"
-    GROUP_SYMBOL -> "group"
-    EVENT_SYMBOL -> "event"
-    USER_SYMBOL -> "user"
-    PHOTO_SYMBOL -> "photo"
-    NOTE_SYMBOL -> "note"
-    SPONSOR_SYMBOL -> "sponsor"
-    UTILITY_SYMBOL -> "utility"
-    LOCATION_SYMBOL -> "location"
-    TYPE_SYMBOL -> "type"
-    TIME_SYMBOL -> "time"
-    AUTHORITY_SYMBOL -> "authority"
-    IF_SYMBOL -> "if"
-    FOR_SYMBOL -> "for"
-    TO_SYMBOL -> "to"
-    IN_SYMBOL -> "in" // IN
-    LBRACKET_SYMBOL -> "lbracket"
-    RBRACKET_SYMBOL -> "rbracket"
-    COORDS_SYMBOL -> "coordinates"
-    CALL_SYMBOL -> "call"
-    else -> "UNKNOWN"
-}
+fun name(symbol: Int) =
+    when (symbol) {
+        NUMBER_SYMBOL -> "NUM"
+        STRING_SYMBOL -> "STRING"
+        LPAREN_SYMBOL -> "LPAREN"
+        RPAREN_SYMBOL -> "RPAREN"
+        LBRACE_SYMBOL -> "LBRACE"
+        RBRACE_SYMBOL -> "RBRACE"
+        SEMI_SYMBOL -> "SEMI"
+        COMMA_SYMBOL -> "COMMA"
+        CIRC_SYMBOL -> "CIRC"
+        BEND_SYMBOL -> "BEND"
+        LINE_SYMBOL -> "LINE"
+        ROAD_SYMBOL -> "ROAD"
+        CITY_SYMBOL -> "CITY"
+        BIN_SYMBOL -> "BIN"
+        DISPOSALSITE_SYMBOL -> "DISPOSAL-SITE"
+        ECOISLAND_SYMBOL -> "ECO-ISLAND"
+        BOX_SYMBOL -> "BOX"
+        REPORT_SYMBOL -> "REPORT"
+        else -> throw Error("Invalid symbol")
+    }
 
 fun printTokens(scanner: Scanner) {
     val token = scanner.getToken()
     if (token.symbol != EOF_SYMBOL) {
-        println("${name(token.symbol)} (\"${token.lexeme}\") at ${token.row}:${token.column}")
+        print("${name(token.symbol)}(\"${token.lexeme}\") ")
         printTokens(scanner)
     }
 }
 
-class Parser(private val scanner: Scanner) {
-    private var currentToken: Token = scanner.getToken()
-
-    fun parse(): Boolean {
-        program()
-        return currentToken.symbol == EOF_SYMBOL
-    }
-
-    private fun match(symbol: Int) {
-        if (currentToken.symbol == symbol) {
-            currentToken = scanner.getToken()
-        } else {
-            throw Exception("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected ${name(symbol)}, found ${name(currentToken.symbol)}")
-        }
-    }
-
-    private fun program() {
-        statementList()
-    }
-
-    private fun statementList() {
-        when (currentToken.symbol) {
-            EOF_SYMBOL -> return
-            else -> {
-                statement()
-                statementList()
-            }
-        }
-    }
-
-    private fun statement() {
-        when (currentToken.symbol) {
-            VAR_SYMBOL -> variableDeclaration()
-            ARRAY_SYMBOL -> arrayDeclaration()
-            FUNCTION_SYMBOL -> functionDefinition()
-            CALL_SYMBOL -> functionCall()
-            CITY_SYMBOL -> cityBlock()
-            FOR_SYMBOL -> forLoop()
-            IF_SYMBOL -> ifStatement()
-            else -> throw Exception("Invalid statement start at ${currentToken.row}:${currentToken.column}. Found '${name(currentToken.symbol)}'")
-        }
-    }
-
-    private fun variableDeclaration() {
-        match(VAR_SYMBOL)
-        match(IDENTIFIER_SYMBOL)
-        match(EQUAL_SYMBOL)
-        expression()
-        match(SEMI_SYMBOL)
-    }
-
-    private fun arrayDeclaration() {
-        match(ARRAY_SYMBOL)
-        match(IDENTIFIER_SYMBOL)
-        match(LT_SYMBOL)
-        type()
-        match(GT_SYMBOL)
-        match(LBRACKET_SYMBOL)
-        expressionList()
-        match(RBRACKET_SYMBOL)
-        match(SEMI_SYMBOL)
-    }
-
-    private fun type() {
-        when (currentToken.symbol) {
-            POI_SYMBOL, USER_SYMBOL, STRING_SYMBOL, NUMBER_SYMBOL -> match(currentToken.symbol)
-            else -> throw Exception("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected type, found ${name(currentToken.symbol)}")
-        }
-    }
-
-    private fun expression() {
-        term()
-        expressionTail()
-    }
-
-    private fun expressionTail() {
-        when (currentToken.symbol) {
-            PLUS_SYMBOL, MINUS_SYMBOL, TIMES_SYMBOL, DIVIDE_SYMBOL -> {
-                operator()
-                term()
-                expressionTail()
-            }
-        }
-    }
-
-    private fun term() {
-        when (currentToken.symbol) {
-            NUMBER_SYMBOL -> match(NUMBER_SYMBOL)
-            STRING_SYMBOL -> match(STRING_SYMBOL)
-            IDENTIFIER_SYMBOL -> match(IDENTIFIER_SYMBOL)
-            COORDS_SYMBOL -> coordinates()
-            LPAREN_SYMBOL -> {
-                match(LPAREN_SYMBOL)
-                expression()
-                match(RPAREN_SYMBOL)
-            }
-            POI_SYMBOL, REPORT_SYMBOL, GROUP_SYMBOL, EVENT_SYMBOL -> block()
-            else -> throw Exception("Invalid term at ${currentToken.row}:${currentToken.column}")
-        }
-    }
-
-    private fun operator() {
-        when (currentToken.symbol) {
-            PLUS_SYMBOL -> match(PLUS_SYMBOL)
-            MINUS_SYMBOL -> match(MINUS_SYMBOL)
-            TIMES_SYMBOL -> match(TIMES_SYMBOL)
-            DIVIDE_SYMBOL -> match(DIVIDE_SYMBOL)
-            else -> throw Exception("Invalid operator at ${currentToken.row}:${currentToken.column}")
-        }
-    }
-
-    private fun expressionList() {
-        when (currentToken.symbol) {
-            RBRACE_SYMBOL -> return
-            else -> {
-                expression()
-                expressionListTail()
-            }
-        }
-    }
-
-    private fun expressionListTail() {
-        when (currentToken.symbol) {
-            COMMA_SYMBOL -> {
-                match(COMMA_SYMBOL)
-                expression()
-                expressionListTail()
-            }
-        }
-    }
-
-    private fun functionDefinition() {
-        match(FUNCTION_SYMBOL)
-        match(IDENTIFIER_SYMBOL)
-        match(LPAREN_SYMBOL)
-        parameterList()
-        match(RPAREN_SYMBOL)
-        match(LBRACE_SYMBOL)
-        innerList()
-        match(RBRACE_SYMBOL)
-    }
+fun main(args: Array<String>) {
 
 
-    private fun innerList() {
-        when (currentToken.symbol) {
-            EOF_SYMBOL, RBRACE_SYMBOL -> return
-            else -> {
-                inner()
-                innerList()
-            }
-        }
-    }
-
-    private fun inner() {
-        when (currentToken.symbol) {
-            VAR_SYMBOL -> variableDeclaration()
-            ARRAY_SYMBOL -> arrayDeclaration()
-            FUNCTION_SYMBOL -> functionDefinition()
-            CALL_SYMBOL -> functionCall()
-            FOR_SYMBOL -> forLoop()
-            IF_SYMBOL -> ifStatement()
-            POI_SYMBOL, REPORT_SYMBOL, GROUP_SYMBOL, EVENT_SYMBOL -> block()
-            else -> throw Exception("Invalid statement start at ${currentToken.row}:${currentToken.column}. Found '${name(currentToken.symbol)}'")
-        }
-    }
-
-    private fun parameterList() {
-        when (currentToken.symbol) {
-            RPAREN_SYMBOL -> return
-            else -> {
-                match(IDENTIFIER_SYMBOL)
-                parameterListTail()
-            }
-        }
-    }
-
-    private fun parameterListTail() {
-        when (currentToken.symbol) {
-            COMMA_SYMBOL -> {
-                match(COMMA_SYMBOL)
-                match(IDENTIFIER_SYMBOL)
-                parameterListTail()
-            }
-        }
-    }
-
-    private fun functionCall() {
-        match(CALL_SYMBOL)
-        match(IDENTIFIER_SYMBOL)
-        match(LPAREN_SYMBOL)
-        argumentList()
-        match(RPAREN_SYMBOL)
-        match(SEMI_SYMBOL)
-    }
-
-    private fun argumentList() {
-        when (currentToken.symbol) {
-            RPAREN_SYMBOL -> return
-            else -> {
-                expression()
-                argumentListTail()
-            }
-        }
-    }
-
-    private fun argumentListTail() {
-        when (currentToken.symbol) {
-            COMMA_SYMBOL -> {
-                match(COMMA_SYMBOL)
-                expression()
-                argumentListTail()
-            }
-        }
-    }
-
-    private fun cityBlock() {
-        match(CITY_SYMBOL)
-        matchStringOrIdentifier()
-        match(LBRACE_SYMBOL)
-        innerList()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun matchStringOrIdentifier() {
-        when (currentToken.symbol) {
-            STRING_SYMBOL, IDENTIFIER_SYMBOL -> match(currentToken.symbol)
-            else -> throw Exception("Expected string or identifier at ${currentToken.row}:${currentToken.column}, found ${name(currentToken.symbol)}")
-        }
-    }
-
-    private fun forLoop() {
-        match(FOR_SYMBOL)
-        match(IDENTIFIER_SYMBOL)
-        match(IN_SYMBOL)
-        match(NUMBER_SYMBOL)
-        match(TO_SYMBOL)
-        match(NUMBER_SYMBOL)
-        match(LBRACE_SYMBOL)
-        innerList()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun ifStatement() {
-        match(IF_SYMBOL)
-        expression()
-        match(LBRACE_SYMBOL)
-        innerList()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun block() {
-        when (currentToken.symbol) {
-            POI_SYMBOL -> poiBlock()
-            REPORT_SYMBOL -> reportBlock()
-            GROUP_SYMBOL -> groupBlock()
-            EVENT_SYMBOL -> eventBlock()
-            else -> throw Exception("Invalid syntax at ${currentToken.row}:${currentToken.column}. Expected block, found ${name(currentToken.symbol)}")
-        }
-    }
-
-    private fun poiBlock() {
-        match(POI_SYMBOL)
-        expression()
-        match(LBRACE_SYMBOL)
-        locationStatement()
-        typeStatement()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun reportBlock() {
-        match(REPORT_SYMBOL)
-        expression()
-        match(LBRACE_SYMBOL)
-        photoStatement()
-        noteStatement()
-        locationStatement()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun groupBlock() {
-        match(GROUP_SYMBOL)
-        expression()
-        match(LBRACE_SYMBOL)
-        userStatementList()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun userStatementList() {
-        when (currentToken.symbol) {
-            RBRACE_SYMBOL -> return
-            else -> {
-                userStatement()
-                userStatementList()
-            }
-        }
-    }
-
-    private fun eventBlock() {
-        match(EVENT_SYMBOL)
-        expression()
-        match(LBRACE_SYMBOL)
-        userStatement()
-        groupBlock()
-        locationStatement()
-        timeStatement()
-        authorityStatement()
-        sponsorStatement()
-        utilityOpt()
-        match(RBRACE_SYMBOL)
-    }
-
-    private fun utilityOpt() {
-        when (currentToken.symbol) {
-            UTILITY_SYMBOL -> utilityStatement()
-        }
-    }
-
-    private fun userStatement() {
-        match(USER_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(COMMA_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun photoStatement() {
-        match(PHOTO_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(COMMA_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun noteStatement() {
-        match(NOTE_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun sponsorStatement() {
-        match(SPONSOR_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun utilityStatement() {
-        match(UTILITY_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun locationStatement() {
-        match(LOCATION_SYMBOL)
-        match(LPAREN_SYMBOL)
-        coordinates()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun typeStatement() {
-        match(TYPE_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun timeStatement() {
-        match(TIME_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun authorityStatement() {
-        match(AUTHORITY_SYMBOL)
-        match(LPAREN_SYMBOL)
-        matchStringOrIdentifier()
-        match(RPAREN_SYMBOL)
-    }
-
-    private fun coordinates(){
-        match(COORDS_SYMBOL)
-        match(LPAREN_SYMBOL)
-        expression()
-        match(COMMA_SYMBOL)
-        expression()
-        match(RPAREN_SYMBOL)
-    }
-
-}
-
-fun main() {
     try{
-        var input = FileInputStream("src/test.txt")
-        var scanner = Scanner(LanguageAutomaton, input)
-
-        printTokens(scanner);
-        println();
-
-        input = FileInputStream("src/test.txt")
-        scanner = Scanner(LanguageAutomaton, input)
-        val parser = Parser(scanner);
-        if (parser.parse()) {
-            println("accept")
-        } else {
-            println("reject")
-        }
-    }catch (e:Exception){
-        println("reject")
+        val input = FileInputStream("src/test.txt")
+        printTokens(Scanner(LanguageAutomaton,input))
+    }catch(e: Exception){
+        println(e.message)
     }
+
+
+
+
 }
