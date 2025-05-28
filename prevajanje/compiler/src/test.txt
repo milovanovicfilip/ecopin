@@ -2,21 +2,21 @@ city "EcoCity" {
   road "Main" {
     line((0,0), (1,1));
     bend((1,1), (2,0), 45);
-  };
+  }
 
   building "Library" {
     box((3,3), (4,4));
-  };
+  }
 
   eco-island "RecycleA" {
     circ((5,5), 0.5);
-  };
+  }
 
   bin (6,6);
 
   disposal-site "BigWaste" {
     box((7,7), (8,8));
-  };
+  }
 
   report (9,9);
 }

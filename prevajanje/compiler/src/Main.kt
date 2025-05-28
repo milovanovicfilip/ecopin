@@ -285,17 +285,215 @@ fun printTokens(scanner: Scanner) {
     }
 }
 
-fun main(args: Array<String>) {
+class Parser(private val scanner: Scanner) {
+    private var currentToken: Token = scanner.getToken()
 
-
-    try{
-        val input = FileInputStream("src/test.txt")
-        printTokens(Scanner(LanguageAutomaton,input))
-    }catch(e: Exception){
-        println(e.message)
+    fun parse(): Boolean {
+        program()
+        return currentToken.symbol == EOF_SYMBOL
     }
 
+    private fun match(symbol: Int) {
+        if (currentToken.symbol == symbol) {
+            currentToken = scanner.getToken()
+        } else {
+            throw Error("Invalid pattern at ${currentToken.symbol}");
+        }
+    }
+
+    private fun program() {
+        elementList()
+    }
+
+    private fun elementList() {
+        when (currentToken.symbol) {
+            CITY_SYMBOL -> {
+                element()
+                elementList()
+            }
+            EOF_SYMBOL -> return
+            else -> throw Error("Syntax error: expected city or EOF, found ${currentToken.symbol}")
+        }
+    }
+
+    private fun element() {
+        match(CITY_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        blockList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun blockList() {
+        when (currentToken.symbol) {
+            ROAD_SYMBOL, BUILDING_SYMBOL, ECOISLAND_SYMBOL, BIN_SYMBOL, DISPOSALSITE_SYMBOL, REPORT_SYMBOL -> {
+                block()
+                blockList()
+            }
+            RBRACE_SYMBOL -> return
+            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.lexeme}")
+        }
+    }
+
+    private fun block() {
+        when (currentToken.symbol) {
+            ROAD_SYMBOL -> roadBlock()
+            BUILDING_SYMBOL -> buildingBlock()
+            ECOISLAND_SYMBOL -> poiBlock()
+            BIN_SYMBOL -> poiBlock()
+            DISPOSALSITE_SYMBOL -> poiBlock()
+            REPORT_SYMBOL -> reportBlock()
+            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.symbol}")
+        }
+    }
+
+    private fun roadBlock() {
+        match(ROAD_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        commandList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun buildingBlock() {
+        match(BUILDING_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        commandList()
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun poiBlock() {
+        when (currentToken.symbol) {
+            ECOISLAND_SYMBOL -> ecoIsland()
+            BIN_SYMBOL -> bin()
+            DISPOSALSITE_SYMBOL -> disposalSite()
+            else -> throw Error("Syntax error: expected eco-island, bin or disposal-site, found ${currentToken.symbol}")
+        }
+    }
+
+    private fun ecoIsland() {
+        match(ECOISLAND_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        match(CIRC_SYMBOL)
+        match(LPAREN_SYMBOL)
+        point()
+        match(COMMA_SYMBOL)
+        match(NUMBER_SYMBOL)
+        match(RPAREN_SYMBOL)
+        match(SEMI_SYMBOL)
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun bin() {
+        match(BIN_SYMBOL)
+        point()
+        match(SEMI_SYMBOL)
+    }
+
+    private fun disposalSite() {
+        match(DISPOSALSITE_SYMBOL)
+        match(STRING_SYMBOL)
+        match(LBRACE_SYMBOL)
+        match(BOX_SYMBOL)
+        match(LPAREN_SYMBOL)
+        point()
+        match(COMMA_SYMBOL)
+        point()
+        match(RPAREN_SYMBOL)
+        match(SEMI_SYMBOL)
+        match(RBRACE_SYMBOL)
+    }
+
+    private fun reportBlock() {
+        match(REPORT_SYMBOL)
+        point()
+        match(SEMI_SYMBOL)
+    }
+
+    private fun commandList() {
+        when (currentToken.symbol) {
+            LINE_SYMBOL, BEND_SYMBOL, BOX_SYMBOL, CIRC_SYMBOL -> {
+                command()
+                commandList()
+            }
+            RBRACE_SYMBOL -> return
+            else -> throw Error("Syntax error: expected command, found ${currentToken.lexeme}")
+        }
+    }
+
+    private fun command() {
+        when (currentToken.symbol) {
+            LINE_SYMBOL -> {
+                match(LINE_SYMBOL)
+                match(LPAREN_SYMBOL)
+                point()
+                match(COMMA_SYMBOL)
+                point()
+                match(RPAREN_SYMBOL)
+                match(SEMI_SYMBOL)
+            }
+            BEND_SYMBOL -> {
+                match(BEND_SYMBOL)
+                match(LPAREN_SYMBOL)
+                point()
+                match(COMMA_SYMBOL)
+                point()
+                match(COMMA_SYMBOL)
+                match(NUMBER_SYMBOL)
+                match(RPAREN_SYMBOL)
+                match(SEMI_SYMBOL)
+            }
+            BOX_SYMBOL -> {
+                match(BOX_SYMBOL)
+                match(LPAREN_SYMBOL)
+                point()
+                match(COMMA_SYMBOL)
+                point()
+                match(RPAREN_SYMBOL)
+                match(SEMI_SYMBOL)
+            }
+            CIRC_SYMBOL -> {
+                match(CIRC_SYMBOL)
+                match(LPAREN_SYMBOL)
+                point()
+                match(COMMA_SYMBOL)
+                match(NUMBER_SYMBOL)
+                match(RPAREN_SYMBOL)
+                match(SEMI_SYMBOL)
+            }
+            else -> throw Error("Syntax error: expected command, found ${currentToken.symbol}")
+        }
+    }
+
+    private fun point() {
+        match(LPAREN_SYMBOL)
+        match(NUMBER_SYMBOL)
+        match(COMMA_SYMBOL)
+        match(NUMBER_SYMBOL)
+        match(RPAREN_SYMBOL)
+    }
+}
 
 
+fun main(args: Array<String>) {
+    try{
+        var input = FileInputStream("src/test.txt")
+        var scanner = Scanner(LanguageAutomaton, input)
 
+        printTokens(scanner);
+        println();
+
+        input = FileInputStream("src/test.txt")
+        scanner = Scanner(LanguageAutomaton, input)
+        val parser = Parser(scanner);
+        if (parser.parse()) {
+            println("accept")
+        } else {
+            println("reject")
+        }
+    }catch (e:Exception){
+        println("reject")
+    }
 }
