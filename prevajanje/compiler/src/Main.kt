@@ -40,10 +40,10 @@ interface DFA {
 }
 
 object LanguageAutomaton: DFA {
-    override val states = (1 .. 77).toSet() //15
+    override val states = (1 .. 71).toSet() //15
     override val alphabet = 0 .. 255
     override val startState = 1
-    override val finalStates = setOf(2, 4, 6, 10, 14, 22, 32, 35, 48, 54, 58, 61, 65, 69, 70, 71, 72, 73, 74, 75, 76, 77)
+    override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 64, 65, 66, 67, 68, 69, 70, 71)
 
     private val numberOfStates = states.max() + 1 // plus the ERROR_STATE
     private val numberOfCodes = alphabet.max() + 1 // plus the EOF
@@ -116,129 +116,92 @@ object LanguageAutomaton: DFA {
         setTransition(15, 'd', 16)
         setSymbol(16, ROAD_SYMBOL)
         setTransition(13, 'e', 17)
-        setTransition(17, 'p', 19)
-        setTransition(18, 'o', 20)
-        setTransition(19, 'r', 21)
-        setTransition(29, 't', 22)
-        setSymbol(22, REPORT_SYMBOL)
+        setTransition(17, 'p', 18)
+        setTransition(18, 'o', 19)
+        setTransition(19, 'r', 20)
+        setTransition(20, 't', 21)
+        setSymbol(21, REPORT_SYMBOL)
 
         // BUILDING
-        setTransition(1, 'b', 24)
-        setTransition(24, 'u', 25)
-        setTransition(25, 'i', 26)
-        setTransition(26, 'l', 27)
-        setTransition(27, 'd', 28)
-        setTransition(28, 'i', 29)
-        setTransition(29, 'n', 30)
-        setTransition(30, 'g', 31)
-        setSymbol(31, BUILDING_SYMBOL)
-        setTransition(24, 'i', 32)
-        setTransition(32, 'n', 33)
-        setSymbol(33, BIN_SYMBOL)
-        setTransition(24, 'o', 34)
-        setTransition(34, 'x', 35)
-        setSymbol(35, BOX_SYMBOL)
-        setTransition(24, 'e', 36)
-        setTransition(36, 'n', 36)
-        setTransition(100, 'd', 69)
-        setSymbol(69, BEND_SYMBOL)
+        setTransition(1, 'b', 22)
+        setTransition(22, 'u', 23)
+        setTransition(23, 'i', 24)
+        setTransition(24, 'l', 25)
+        setTransition(25, 'd', 26)
+        setTransition(26, 'i', 27)
+        setTransition(27, 'n', 28)
+        setTransition(28, 'g', 29)
+        setSymbol(29, BUILDING_SYMBOL)
+        setTransition(22, 'i', 30)
+        setTransition(30, 'n', 31)
+        setSymbol(31, BIN_SYMBOL)
+        setTransition(22, 'o', 32)
+        setTransition(32, 'x', 33)
+        setSymbol(33, BOX_SYMBOL)
+        setTransition(22, 'e', 34)
+        setTransition(34, 'n', 35)
+        setTransition(35, 'd', 36)
+        setSymbol(36, BEND_SYMBOL)
 
         // ECO-ISLAND
-        setTransition(1, 'e', 23)
-        setTransition(23, 'c', 24)
-        setTransition(24, 'o', 25)
-        setTransition(25, '-', 26)
-        setTransition(26, 'i', 27)
-        setTransition(27, 's', 28)
-        setTransition(28, 'l', 29)
-        setTransition(29, 'a', 30)
-        setTransition(30, 'n', 31)
-        setTransition(31, 'd', 32)
-        setSymbol(32, ECOISLAND_SYMBOL)
-
-        // BIN
-        setTransition(1, 'b', 33)
-        setTransition(33, 'i', 34)
-        setTransition(34, 'n', 35)
-        setSymbol(35, BIN_SYMBOL)
+        setTransition(1, 'e', 37)
+        setTransition(37, 'c', 38)
+        setTransition(38, 'o', 39)
+        setTransition(39, '-', 40)
+        setTransition(40, 'i', 41)
+        setTransition(41, 's', 42)
+        setTransition(42, 'l', 43)
+        setTransition(43, 'a', 44)
+        setTransition(44, 'n', 45)
+        setTransition(45, 'd', 46)
+        setSymbol(46, ECOISLAND_SYMBOL)
 
         // DISPOSAL-SITE
-        setTransition(1, 'd', 36)
-        setTransition(36, 'i', 37)
-        setTransition(37, 's', 38)
-        setTransition(38, 'p', 39)
-        setTransition(39, 'o', 40)
-        setTransition(40, 's', 41)
-        setTransition(41, 'a', 42)
-        setTransition(42, 'l', 43)
-        setTransition(43, '-', 44)
-        setTransition(44, 's', 45)
-        setTransition(45, 'i', 46)
-        setTransition(46, 't', 47)
-        setTransition(47, 'e', 48)
-        setSymbol(48, DISPOSALSITE_SYMBOL)
-
-        // REPORT
-        setTransition(1, 'r', 49)
-        setTransition(49, 'e', 50)
-        setTransition(50, 'p', 51)
-        setTransition(51, 'o', 52)
-        setTransition(52, 'r', 53)
-        setTransition(53, 't', 54)
-        setSymbol(54, REPORT_SYMBOL)
+        setTransition(1, 'd', 47)
+        setTransition(47, 'i', 48)
+        setTransition(48, 's', 49)
+        setTransition(49, 'p', 50)
+        setTransition(50, 'o', 51)
+        setTransition(51, 's', 52)
+        setTransition(52, 'a', 53)
+        setTransition(53, 'l', 54)
+        setTransition(54, '-', 55)
+        setTransition(55, 's', 56)
+        setTransition(56, 'i', 57)
+        setTransition(57, 't', 58)
+        setTransition(58, 'e', 59)
+        setSymbol(59, DISPOSALSITE_SYMBOL)
 
         // LINE
-        setTransition(1, 'l', 55)
-        setTransition(55, 'i', 56)
-        setTransition(56, 'n', 57)
-        setTransition(57, 'e', 58)
-        setSymbol(58, LINE_SYMBOL)
-
-
-        // BOX
-        setTransition(1, 'b', 59)
-        setTransition(59, 'o', 60)
-        setTransition(60, 'x', 61)
-        setSymbol(61, BOX_SYMBOL)
-
-        // CIRC
-        setTransition(1, 'c', 62)
-        setTransition(62, 'i', 63)
-        setTransition(63, 'r', 64)
-        setTransition(64, 'c', 65)
-        setSymbol(65, CIRC_SYMBOL)
-
-        // BEND
-        setTransition(1, 'b', 66)
-        setTransition(66, 'e', 67)
-        setTransition(67, 'n', 68)
-        setTransition(68, 'd', 69)
-        setSymbol(69, BEND_SYMBOL)
-
+        setTransition(1, 'l', 60)
+        setTransition(60, 'i', 61)
+        setTransition(61, 'n', 62)
+        setTransition(62, 'e', 63)
+        setSymbol(63, LINE_SYMBOL)
 
         //LPAREN, RPAREN, LBRACE, RBRACE, SEMI, COMMA
-        setTransition(1, '(', 70)
-        setTransition(1, ')', 71)
-        setTransition(1, '{', 72)
-        setTransition(1, '}', 73)
-        setTransition(1, ';', 74)
-        setTransition(1, ',', 75)
+        setTransition(1, '(', 64)
+        setTransition(1, ')', 65)
+        setTransition(1, '{', 66)
+        setTransition(1, '}', 67)
+        setTransition(1, ';', 68)
+        setTransition(1, ',', 69)
 
         //Za WHITESPACE-e in EOF
-        setTransition(1, ' ', 76)
-        setTransition(1, '\n', 76)
-        setTransition(1, '\r', 76)
-        setTransition(1, '\t', 76)
-        setTransition(1, EOF, 77)
+        setTransition(1, ' ', 70)
+        setTransition(1, '\n', 70)
+        setTransition(1, '\r', 70)
+        setTransition(1, '\t', 70)
+        setTransition(1, EOF, 71)
 
-        setSymbol(70, LPAREN_SYMBOL)
-        setSymbol(71, RPAREN_SYMBOL)
-        setSymbol(72, LBRACE_SYMBOL)
-        setSymbol(73, RBRACE_SYMBOL)
-        setSymbol(74, SEMI_SYMBOL)
-        setSymbol(75, COMMA_SYMBOL)
-        setSymbol(76, SKIP_SYMBOL)
-        setSymbol(77, EOF_SYMBOL)
+        setSymbol(64, LPAREN_SYMBOL)
+        setSymbol(65, RPAREN_SYMBOL)
+        setSymbol(66, LBRACE_SYMBOL)
+        setSymbol(67, RBRACE_SYMBOL)
+        setSymbol(68, SEMI_SYMBOL)
+        setSymbol(69, COMMA_SYMBOL)
+        setSymbol(70, SKIP_SYMBOL)
+        setSymbol(71, EOF_SYMBOL)
     }
 }
 
@@ -305,6 +268,7 @@ fun name(symbol: Int) =
         LINE_SYMBOL -> "LINE"
         ROAD_SYMBOL -> "ROAD"
         CITY_SYMBOL -> "CITY"
+        BUILDING_SYMBOL -> "BUILDING"
         BIN_SYMBOL -> "BIN"
         DISPOSALSITE_SYMBOL -> "DISPOSAL-SITE"
         ECOISLAND_SYMBOL -> "ECO-ISLAND"
