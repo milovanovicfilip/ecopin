@@ -26,6 +26,7 @@ const val BOX_SYMBOL = 16
 const val LINE_SYMBOL = 17
 const val CIRC_SYMBOL = 18
 const val BEND_SYMBOL = 19
+const val POLYGON_SYMBOL = 20
 
 
 const val EOF = -1
@@ -41,10 +42,10 @@ interface DFA {
 }
 
 object LanguageAutomaton: DFA {
-    override val states = (1 .. 71).toSet() //15
+    override val states = (1 .. 78).toSet() //15
     override val alphabet = 0 .. 255
     override val startState = 1
-    override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 64, 65, 66, 67, 68, 69, 70, 71)
+    override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 70, 71, 72, 73, 74, 75, 76, 77, 78)
 
     private val numberOfStates = states.max() + 1 // plus the ERROR_STATE
     private val numberOfCodes = alphabet.max() + 1 // plus the EOF
@@ -180,29 +181,39 @@ object LanguageAutomaton: DFA {
         setTransition(62, 'e', 63)
         setSymbol(63, LINE_SYMBOL)
 
+        // POLYGON
+        setTransition(1, 'p', 64)
+        setTransition(64, 'o', 65)
+        setTransition(65, 'l', 66)
+        setTransition(66, 'y', 67)
+        setTransition(67, 'g', 68)
+        setTransition(68, 'o', 69)
+        setTransition(69, 'n', 70)
+        setSymbol(70, POLYGON_SYMBOL)
+
         //LPAREN, RPAREN, LBRACE, RBRACE, SEMI, COMMA
-        setTransition(1, '(', 64)
-        setTransition(1, ')', 65)
-        setTransition(1, '{', 66)
-        setTransition(1, '}', 67)
-        setTransition(1, ';', 68)
-        setTransition(1, ',', 69)
+        setTransition(1, '(', 71)
+        setTransition(1, ')', 72)
+        setTransition(1, '{', 73)
+        setTransition(1, '}', 74)
+        setTransition(1, ';', 75)
+        setTransition(1, ',', 76)
 
         //Za WHITESPACE-e in EOF
-        setTransition(1, ' ', 70)
-        setTransition(1, '\n', 70)
-        setTransition(1, '\r', 70)
-        setTransition(1, '\t', 70)
-        setTransition(1, EOF, 71)
+        setTransition(1, ' ', 77)
+        setTransition(1, '\n', 77)
+        setTransition(1, '\r', 77)
+        setTransition(1, '\t', 77)
+        setTransition(1, EOF, 78)
 
-        setSymbol(64, LPAREN_SYMBOL)
-        setSymbol(65, RPAREN_SYMBOL)
-        setSymbol(66, LBRACE_SYMBOL)
-        setSymbol(67, RBRACE_SYMBOL)
-        setSymbol(68, SEMI_SYMBOL)
-        setSymbol(69, COMMA_SYMBOL)
-        setSymbol(70, SKIP_SYMBOL)
-        setSymbol(71, EOF_SYMBOL)
+        setSymbol(71, LPAREN_SYMBOL)
+        setSymbol(72, RPAREN_SYMBOL)
+        setSymbol(73, LBRACE_SYMBOL)
+        setSymbol(74, RBRACE_SYMBOL)
+        setSymbol(75, SEMI_SYMBOL)
+        setSymbol(76, COMMA_SYMBOL)
+        setSymbol(77, SKIP_SYMBOL)
+        setSymbol(78, EOF_SYMBOL)
     }
 }
 
@@ -275,6 +286,7 @@ fun name(symbol: Int) =
         ECOISLAND_SYMBOL -> "ECO-ISLAND"
         BOX_SYMBOL -> "BOX"
         REPORT_SYMBOL -> "REPORT"
+        POLYGON_SYMBOL -> "POLYGON"
         else -> throw Error("Invalid symbol")
     }
 
@@ -433,7 +445,7 @@ class Parser(private val scanner: Scanner) {
 
     private fun commandList(): List<CommandNode> {
         val commands = mutableListOf<CommandNode>()
-        while (currentToken.symbol in listOf(LINE_SYMBOL, BEND_SYMBOL, BOX_SYMBOL, CIRC_SYMBOL)) {
+        while (currentToken.symbol in listOf(LINE_SYMBOL, BEND_SYMBOL, BOX_SYMBOL, CIRC_SYMBOL, POLYGON_SYMBOL)) {
             commands.add(command())
         }
         return commands
@@ -485,8 +497,28 @@ class Parser(private val scanner: Scanner) {
                 match(SEMI_SYMBOL)
                 return CircCommand(point1,number)
             }
+            POLYGON_SYMBOL -> {
+                match(POLYGON_SYMBOL)
+                match(LPAREN_SYMBOL)
+                val pointList = pointList()
+                match(RPAREN_SYMBOL)
+                match(SEMI_SYMBOL)
+                return PolygonCommand(pointList)
+            }
             else -> throw Error("Syntax error: expected command, found ${currentToken.symbol}")
         }
+    }
+
+    private fun pointList(): List<Point> {
+        val points = mutableListOf<Point>()
+        points.add(point())
+
+        while (currentToken.symbol == COMMA_SYMBOL) {
+            match(COMMA_SYMBOL)
+            points.add(point())
+        }
+
+        return points
     }
 
     private fun point(): Point {
@@ -576,7 +608,7 @@ fun LineCommand.toFeature(type: String, name: String): String = """
       "type": "Feature",
       "geometry": {
         "type": "LineString",
-        "coordinates": [ [${from.x}, ${from.y}], [${to.x}, ${to.y}] ]
+        "coordinates": [ [${from.y}, ${from.x}], [${to.y}, ${to.x}] ]
       },
       "properties": { "type": "$type", "name": $name }
     }
@@ -587,7 +619,7 @@ fun BendCommand.toFeature(type: String, name: String): String = """
       "type": "Feature",
       "geometry": {
         "type": "LineString",
-        "coordinates": [ [${from.x}, ${from.y}], [${to.x}, ${to.y}] ]
+        "coordinates": [ [${from.y}, ${from.x}], [${to.y}, ${to.x}] ]
       },
       "properties": { "type": "$type", "name": $name, "angle": $angle }
     }
@@ -617,8 +649,8 @@ fun BoxCommand.toFeature(type: String, name: String): String = run {
 
 fun PolygonCommand.toFeature(type: String, name: String): String {
     val coords = points.map { point ->
-        "[${point.x}, ${point.y}]"
-    } + "[${points[0].x}, ${points[0].y}]" // close the polygon
+        "[${point.y}, ${point.x}]"
+    } + "[${points[0].y}, ${points[0].x}]"
 
     return """
         {
@@ -627,22 +659,34 @@ fun PolygonCommand.toFeature(type: String, name: String): String {
             "type": "Polygon",
             "coordinates": [ [ ${coords.joinToString(", ")} ] ]
           },
-          "properties": { "type": "$type", "name": \"$name\" }
+          "properties": { "type": "$type", "name": $name }
         }
     """.trimIndent()
 }
 
 
-fun CircCommand.toFeature(type: String, name: String): String = """
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [ ${center.x}, ${center.y} ]
-      },
-      "properties": { "type": "$type", "name": $name, "radius": $radius }
+fun CircCommand.toFeature(type: String, name: String): String {
+    val segments = 32
+    val angleStep = 2 * Math.PI / segments
+    val coords = (0..segments).map { i ->
+        val angle = i * angleStep
+        val dx = (radius/10000) * Math.cos(angle)
+        val dy = (radius/10000) * Math.sin(angle)
+        "[${center.y + dx}, ${center.x + dy}]"
     }
-""".trimIndent()
+
+    return """
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [ [ ${coords.joinToString(", ")} ] ]
+          },
+          "properties": { "type": "$type", "name": $name }
+        }
+    """.trimIndent()
+}
+
 
 fun EcoIslandNode.toFeature(type: String, name: String): String = CircCommand(center, radius).toFeature(type, name)
 fun BinNode.toFeature(type: String): String = """
@@ -664,7 +708,11 @@ fun ReportNode.toFeature(type: String): String = """
         "type": "Point",
         "coordinates": [ ${location.y}, ${location.x} ]
       },
-      "properties": { "type": "$type" }
+      "properties": { 
+        "type": "$type",
+        "marker-color": "#FF0000",
+        "marker-symbol": "info" 
+      }
     }
 """.trimIndent()
 

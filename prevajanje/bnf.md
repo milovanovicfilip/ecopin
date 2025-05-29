@@ -24,7 +24,11 @@ ReportBlock ::= "report" Point ";"
 
 CommandList ::= Command CommandList | ε
 
-Command ::= "line" "(" Point "," Point ")" ";" | "bend" "(" Point "," Point "," Number ")" ";" | "box"  "(" Point "," Point ")" ";" | "circ" "(" Point "," Number ")" ";"
+Command ::= "line" "(" Point "," Point ")" ";" | "bend" "(" Point "," Point "," Number ")" ";" | "box"  "(" Point "," Point ")" ";" | "circ" "(" Point "," Number ")" ";" | "polygon" "(" PointList ")" ";"
+
+PointList ::= Point PointListTail
+PointListTail ::= "," Point PointListTail | ε
+
 
 Point ::= "(" Number "," Number ")"
 
