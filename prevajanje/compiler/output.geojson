@@ -1,0 +1,61 @@
+        {
+          "type": "FeatureCollection",
+          "features": [
+            {
+  "type": "Feature",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [ [0.0, 0.0], [1.0, 1.0] ]
+  },
+  "properties": { "type": "road", "name": "Main" }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [ [1.0, 1.0], [2.0, 0.0] ]
+  },
+  "properties": { "type": "road", "name": "Main", "angle": 45.0 }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [ [ [15.63470545605081, 46.56010589840964], [15.634822132137797, 46.56010589840964], [15.634822132137797, 46.55993945289808], [15.63470545605081, 46.55993945289808], [15.63470545605081, 46.56010589840964] ] ]
+  },
+  "properties": { "type": "building", "name": "hisa" }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [ 5.0, 5.0 ]
+  },
+  "properties": { "type": "eco-island", "name": "RecycleA", "radius": 0.5 }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [ 15.628367966505106, 46.56291695725025 ]
+  },
+  "properties": { "type": "bin" }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [ [ [15.612722043135523, 46.57159649835781], [15.613108921985967, 46.57159649835781], [15.613108921985967, 46.571378621944625], [15.612722043135523, 46.571378621944625], [15.612722043135523, 46.57159649835781] ] ]
+  },
+  "properties": { "type": "disposal-site", "name": "BigWaste" }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [ 15.631198175160979, 46.5595917067311 ]
+  },
+  "properties": { "type": "report" }
+}
+          ]
+        }

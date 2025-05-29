@@ -1,3 +1,4 @@
+import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
 
@@ -288,9 +289,12 @@ fun printTokens(scanner: Scanner) {
 class Parser(private val scanner: Scanner) {
     private var currentToken: Token = scanner.getToken()
 
-    fun parse(): Boolean {
-        program()
-        return currentToken.symbol == EOF_SYMBOL
+    fun parse(): ProgramNode {
+        val cities = mutableListOf<CityNode>()
+        while (currentToken.symbol != EOF_SYMBOL) {
+            cities.add(element())
+        }
+        return ProgramNode(cities)
     }
 
     private fun match(symbol: Int) {
@@ -316,55 +320,63 @@ class Parser(private val scanner: Scanner) {
         }
     }
 
-    private fun element() {
+    private fun element(): CityNode {
         match(CITY_SYMBOL)
+        var name = currentToken.lexeme
         match(STRING_SYMBOL)
         match(LBRACE_SYMBOL)
-        blockList()
+        val blocks = blockList()
         match(RBRACE_SYMBOL)
+        return CityNode(name, blocks)
     }
 
-    private fun blockList() {
-        when (currentToken.symbol) {
-            ROAD_SYMBOL, BUILDING_SYMBOL, ECOISLAND_SYMBOL, BIN_SYMBOL, DISPOSALSITE_SYMBOL, REPORT_SYMBOL -> {
-                block()
-                blockList()
-            }
-            RBRACE_SYMBOL -> return
-            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.lexeme}")
+    private fun blockList(): List<BlockNode> {
+        val blocks = mutableListOf<BlockNode>()
+        while (
+            currentToken.symbol in listOf(
+                ROAD_SYMBOL, BUILDING_SYMBOL, ECOISLAND_SYMBOL,
+                BIN_SYMBOL, DISPOSALSITE_SYMBOL, REPORT_SYMBOL
+            )
+        ) {
+            blocks.add(block())
         }
+        return blocks
     }
 
-    private fun block() {
-        when (currentToken.symbol) {
+    private fun block(): BlockNode {
+        return when (currentToken.symbol) {
             ROAD_SYMBOL -> roadBlock()
             BUILDING_SYMBOL -> buildingBlock()
             ECOISLAND_SYMBOL -> poiBlock()
             BIN_SYMBOL -> poiBlock()
             DISPOSALSITE_SYMBOL -> poiBlock()
             REPORT_SYMBOL -> reportBlock()
-            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.symbol}")
+            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.lexeme}")
         }
     }
 
-    private fun roadBlock() {
+    private fun roadBlock(): RoadBlockNode {
         match(ROAD_SYMBOL)
+        val name = currentToken.lexeme
         match(STRING_SYMBOL)
         match(LBRACE_SYMBOL)
-        commandList()
+        val commandList = commandList()
         match(RBRACE_SYMBOL)
+        return RoadBlockNode(name,commandList)
     }
 
-    private fun buildingBlock() {
+    private fun buildingBlock(): BuildingBlockNode {
         match(BUILDING_SYMBOL)
+        val name = currentToken.lexeme
         match(STRING_SYMBOL)
         match(LBRACE_SYMBOL)
-        commandList()
+        val commandList = commandList()
         match(RBRACE_SYMBOL)
+        return BuildingBlockNode(name, commandList)
     }
 
-    private fun poiBlock() {
-        when (currentToken.symbol) {
+    private fun poiBlock(): BlockNode {
+        return when (currentToken.symbol) {
             ECOISLAND_SYMBOL -> ecoIsland()
             BIN_SYMBOL -> bin()
             DISPOSALSITE_SYMBOL -> disposalSite()
@@ -372,109 +384,289 @@ class Parser(private val scanner: Scanner) {
         }
     }
 
-    private fun ecoIsland() {
+    private fun ecoIsland(): EcoIslandNode {
         match(ECOISLAND_SYMBOL)
+        val name = currentToken.lexeme
         match(STRING_SYMBOL)
         match(LBRACE_SYMBOL)
         match(CIRC_SYMBOL)
         match(LPAREN_SYMBOL)
-        point()
+        val point = point()
         match(COMMA_SYMBOL)
+        val radius = currentToken.lexeme.toDouble()
         match(NUMBER_SYMBOL)
         match(RPAREN_SYMBOL)
         match(SEMI_SYMBOL)
         match(RBRACE_SYMBOL)
+        return EcoIslandNode(name, point, radius)
     }
 
-    private fun bin() {
+    private fun bin(): BinNode {
         match(BIN_SYMBOL)
-        point()
+        val point = point()
         match(SEMI_SYMBOL)
+        return BinNode(point)
     }
 
-    private fun disposalSite() {
+    private fun disposalSite(): DisposalSiteNode {
         match(DISPOSALSITE_SYMBOL)
+        val name = currentToken.lexeme
         match(STRING_SYMBOL)
         match(LBRACE_SYMBOL)
         match(BOX_SYMBOL)
         match(LPAREN_SYMBOL)
-        point()
+        val point1 = point()
         match(COMMA_SYMBOL)
-        point()
+        val point2 = point()
         match(RPAREN_SYMBOL)
         match(SEMI_SYMBOL)
         match(RBRACE_SYMBOL)
+        return DisposalSiteNode(name, point1, point2)
     }
 
-    private fun reportBlock() {
+    private fun reportBlock(): ReportNode {
         match(REPORT_SYMBOL)
-        point()
+        val point = point()
         match(SEMI_SYMBOL)
+        return ReportNode(point)
     }
 
-    private fun commandList() {
-        when (currentToken.symbol) {
-            LINE_SYMBOL, BEND_SYMBOL, BOX_SYMBOL, CIRC_SYMBOL -> {
-                command()
-                commandList()
-            }
-            RBRACE_SYMBOL -> return
-            else -> throw Error("Syntax error: expected command, found ${currentToken.lexeme}")
+    private fun commandList(): List<CommandNode> {
+        val commands = mutableListOf<CommandNode>()
+        while (currentToken.symbol in listOf(LINE_SYMBOL, BEND_SYMBOL, BOX_SYMBOL, CIRC_SYMBOL)) {
+            commands.add(command())
         }
+        return commands
     }
 
-    private fun command() {
-        when (currentToken.symbol) {
+    private fun command(): CommandNode {
+        return when (currentToken.symbol) {
             LINE_SYMBOL -> {
                 match(LINE_SYMBOL)
                 match(LPAREN_SYMBOL)
-                point()
+                val point1 = point()
                 match(COMMA_SYMBOL)
-                point()
+                val point2 = point()
                 match(RPAREN_SYMBOL)
                 match(SEMI_SYMBOL)
+                LineCommand(point1,point2)
             }
             BEND_SYMBOL -> {
                 match(BEND_SYMBOL)
                 match(LPAREN_SYMBOL)
-                point()
+                val point1 = point()
                 match(COMMA_SYMBOL)
-                point()
+                val point2 = point()
                 match(COMMA_SYMBOL)
+                val number = currentToken.lexeme.toDouble()
                 match(NUMBER_SYMBOL)
                 match(RPAREN_SYMBOL)
                 match(SEMI_SYMBOL)
+                return BendCommand(point1, point2, number)
             }
             BOX_SYMBOL -> {
                 match(BOX_SYMBOL)
                 match(LPAREN_SYMBOL)
-                point()
+                val point1 = point()
                 match(COMMA_SYMBOL)
-                point()
+                val point2 = point()
                 match(RPAREN_SYMBOL)
                 match(SEMI_SYMBOL)
+                return BoxCommand(point1, point2)
             }
             CIRC_SYMBOL -> {
                 match(CIRC_SYMBOL)
                 match(LPAREN_SYMBOL)
-                point()
+                val point1 = point()
                 match(COMMA_SYMBOL)
+                val number = currentToken.lexeme.toDouble()
                 match(NUMBER_SYMBOL)
                 match(RPAREN_SYMBOL)
                 match(SEMI_SYMBOL)
+                return CircCommand(point1,number)
             }
             else -> throw Error("Syntax error: expected command, found ${currentToken.symbol}")
         }
     }
 
-    private fun point() {
+    private fun point(): Point {
         match(LPAREN_SYMBOL)
+        val number1 = currentToken.lexeme.toDouble()
         match(NUMBER_SYMBOL)
         match(COMMA_SYMBOL)
+        val number2 = currentToken.lexeme.toDouble()
         match(NUMBER_SYMBOL)
         match(RPAREN_SYMBOL)
+        return Point(number1, number2)
     }
 }
+
+sealed class ASTNode
+
+data class ProgramNode(val elements: List<CityNode>) : ASTNode()
+
+data class CityNode(val name: String, val blocks: List<BlockNode>) : ASTNode()
+
+sealed class BlockNode : ASTNode()
+data class RoadBlockNode(val name: String, val commands: List<CommandNode>) : BlockNode()
+data class BuildingBlockNode(val name: String, val commands: List<CommandNode>) : BlockNode()
+data class EcoIslandNode(val name: String, val center: Point, val radius: Double) : BlockNode()
+data class BinNode(val location: Point) : BlockNode()
+data class DisposalSiteNode(val name: String, val p1: Point, val p2: Point) : BlockNode()
+data class ReportNode(val location: Point) : BlockNode()
+
+sealed class CommandNode : ASTNode()
+data class LineCommand(val from: Point, val to: Point) : CommandNode()
+data class BendCommand(val from: Point, val to: Point, val angle: Double) : CommandNode()
+data class BoxCommand(val p1: Point, val p2: Point) : CommandNode()
+data class CircCommand(val center: Point, val radius: Double) : CommandNode()
+data class PolygonCommand(val points: List<Point>) : CommandNode()
+
+data class Point(val x: Double, val y: Double)
+
+fun ASTNode.toGeoJson(): String {
+    val features = mutableListOf<String>()
+
+    when (this) {
+        is ProgramNode -> {
+            for (city in elements) {
+                features += city.toGeoJsonFeatures()
+            }
+        }
+        else -> error("Top-level node must be ProgramNode")
+    }
+
+    return """
+        {
+          "type": "FeatureCollection",
+          "features": [
+            ${features.joinToString(",\n")}
+          ]
+        }
+    """.trimIndent()
+}
+
+fun CityNode.toGeoJsonFeatures(): List<String> {
+    val result = mutableListOf<String>()
+    for (block in blocks) {
+        result += block.toGeoJsonFeatures(name)
+    }
+    return result
+}
+
+fun BlockNode.toGeoJsonFeatures(cityName: String): List<String> = when (this) {
+    is RoadBlockNode -> commands.map { it.toFeature("road", name) }
+    is BuildingBlockNode -> commands.map { it.toFeature("building", name) }
+    is EcoIslandNode -> listOf(toFeature("eco-island", name))
+    is BinNode -> listOf(toFeature("bin"))
+    is DisposalSiteNode -> listOf(toFeature("disposal-site", name))
+    is ReportNode -> listOf(toFeature("report"))
+}
+
+fun CommandNode.toFeature(type: String, name: String): String = when (this) {
+    is LineCommand -> this.toFeature(type, name)
+    is BendCommand -> this.toFeature(type, name)
+    is BoxCommand -> this.toFeature(type, name)
+    is CircCommand -> this.toFeature(type, name)
+    is PolygonCommand -> this.toFeature(type, name)
+}
+
+fun LineCommand.toFeature(type: String, name: String): String = """
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [ [${from.x}, ${from.y}], [${to.x}, ${to.y}] ]
+      },
+      "properties": { "type": "$type", "name": $name }
+    }
+""".trimIndent()
+
+fun BendCommand.toFeature(type: String, name: String): String = """
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [ [${from.x}, ${from.y}], [${to.x}, ${to.y}] ]
+      },
+      "properties": { "type": "$type", "name": $name, "angle": $angle }
+    }
+""".trimIndent()
+
+fun BoxCommand.toFeature(type: String, name: String): String = run {
+    val (lat1, lon1) = p1
+    val (lat2, lon2) = p2
+    val coords = listOf(
+        "[${lon1}, ${lat1}]",
+        "[${lon2}, ${lat1}]",
+        "[${lon2}, ${lat2}]",
+        "[${lon1}, ${lat2}]",
+        "[${lon1}, ${lat1}]"
+    ).joinToString(", ")
+    """
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [ [ $coords ] ]
+          },
+          "properties": { "type": "$type", "name": $name }
+        }
+    """.trimIndent()
+}
+
+fun PolygonCommand.toFeature(type: String, name: String): String {
+    val coords = points.map { point ->
+        "[${point.x}, ${point.y}]"
+    } + "[${points[0].x}, ${points[0].y}]" // close the polygon
+
+    return """
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [ [ ${coords.joinToString(", ")} ] ]
+          },
+          "properties": { "type": "$type", "name": \"$name\" }
+        }
+    """.trimIndent()
+}
+
+
+fun CircCommand.toFeature(type: String, name: String): String = """
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [ ${center.x}, ${center.y} ]
+      },
+      "properties": { "type": "$type", "name": $name, "radius": $radius }
+    }
+""".trimIndent()
+
+fun EcoIslandNode.toFeature(type: String, name: String): String = CircCommand(center, radius).toFeature(type, name)
+fun BinNode.toFeature(type: String): String = """
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [ ${location.y}, ${location.x} ]
+      },
+      "properties": { "type": "$type" }
+    }
+""".trimIndent()
+
+fun DisposalSiteNode.toFeature(type: String, name: String): String = BoxCommand(p1, p2).toFeature(type, name)
+fun ReportNode.toFeature(type: String): String = """
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [ ${location.y}, ${location.x} ]
+      },
+      "properties": { "type": "$type" }
+    }
+""".trimIndent()
 
 
 fun main(args: Array<String>) {
@@ -488,11 +680,8 @@ fun main(args: Array<String>) {
         input = FileInputStream("src/test.txt")
         scanner = Scanner(LanguageAutomaton, input)
         val parser = Parser(scanner);
-        if (parser.parse()) {
-            println("accept")
-        } else {
-            println("reject")
-        }
+        val ast = parser.parse()
+        File("output.geojson").writeText(ast.toGeoJson())
     }catch (e:Exception){
         println("reject")
     }
