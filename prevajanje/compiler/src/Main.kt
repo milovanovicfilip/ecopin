@@ -1,6 +1,4 @@
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
+import java.io.*
 import javax.print.attribute.standard.Severity
 
 const val ERROR_STATE = 0
@@ -44,8 +42,8 @@ interface DFA {
 }
 
 object LanguageAutomaton: DFA {
-    override val states = (1 .. 86).toSet() //15
-    override val alphabet = 0 .. 255
+    override val states = (1 .. 87).toSet() //15
+    override val alphabet = 0 .. 65536
     override val startState = 1
     override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 70, 78, 79, 80, 81, 82, 83, 84, 85, 86)
 
@@ -79,9 +77,14 @@ object LanguageAutomaton: DFA {
     init {
 
         // NUMBER (decimal in int)
+
+        setTransition(1, '-', 87)
+        setTransition(1, '+', 87)
+
         for (digit in '0'..'9') {
             setTransition(1, digit, 2)
             setTransition(2, digit, 2)
+            setTransition(87, digit, 2)
         }
         setTransition(2, '.', 3)
         for (digit in '0'..'9') {
@@ -94,8 +97,8 @@ object LanguageAutomaton: DFA {
 
         //STRING
         setTransition(1, '"', 5)
-        for (code in 32..128) {
-            if (code != '"'.code) {
+        for (code in 0..Char.MAX_VALUE.code) {
+            if (code != '"'.code && code != '\n'.code && code != '\r'.code) {
                 setTransition(5, code.toChar(), 5)
             }
         }
@@ -232,7 +235,7 @@ object LanguageAutomaton: DFA {
 
 data class Token(val symbol: Int, val lexeme: String, val startRow: Int, val startColumn: Int)
 
-class Scanner(private val automaton: DFA, private val stream: InputStream) {
+class Scanner(private val automaton: DFA, private val stream: Reader) {
     private var last: Int? = null
     private var row = 1
     private var column = 1
@@ -273,7 +276,7 @@ class Scanner(private val automaton: DFA, private val stream: InputStream) {
                 Token(symbol, lexeme, startRow, startColumn)
             }
         } else {
-            throw Error("Invalid pattern at ${row}:${column}")
+            throw Exception("Invalid pattern at ${row}:${column}")
         }
     }
 }
@@ -327,7 +330,7 @@ class Parser(private val scanner: Scanner) {
         if (currentToken.symbol == symbol) {
             currentToken = scanner.getToken()
         } else {
-            throw Error("Invalid pattern at ${currentToken.symbol}");
+            throw Exception("Invalid pattern at ${currentToken.symbol}");
         }
     }
 
@@ -342,7 +345,7 @@ class Parser(private val scanner: Scanner) {
                 elementList()
             }
             EOF_SYMBOL -> return
-            else -> throw Error("Syntax error: expected city or EOF, found ${currentToken.symbol}")
+            else -> throw Exception("Syntax error: expected city or EOF, found ${currentToken.symbol}")
         }
     }
 
@@ -377,7 +380,7 @@ class Parser(private val scanner: Scanner) {
             BIN_SYMBOL -> poiBlock()
             DISPOSALSITE_SYMBOL -> poiBlock()
             REPORT_SYMBOL -> reportBlock()
-            else -> throw Error("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.lexeme}")
+            else -> throw Exception("Syntax error: expected road, building, eco-island, bin, disposal-site or report, found ${currentToken.lexeme}")
         }
     }
 
@@ -406,7 +409,7 @@ class Parser(private val scanner: Scanner) {
             ECOISLAND_SYMBOL -> ecoIsland()
             BIN_SYMBOL -> bin()
             DISPOSALSITE_SYMBOL -> disposalSite()
-            else -> throw Error("Syntax error: expected eco-island, bin or disposal-site, found ${currentToken.symbol}")
+            else -> throw Exception("Syntax error: expected eco-island, bin or disposal-site, found ${currentToken.symbol}")
         }
     }
 
@@ -452,6 +455,8 @@ class Parser(private val scanner: Scanner) {
 
     private fun reportBlock(): ReportNode {
         match(REPORT_SYMBOL)
+        val name = currentToken.lexeme
+        match(STRING_SYMBOL)
         val point = point()
 
         return if (currentToken.symbol == LBRACE_SYMBOL) {
@@ -463,10 +468,10 @@ class Parser(private val scanner: Scanner) {
             match(RPAREN_SYMBOL)
             match(SEMI_SYMBOL)
             match(RBRACE_SYMBOL)
-            ReportNode(point, severity)
+            ReportNode(name, point, severity)
         } else {
             match(SEMI_SYMBOL)
-            ReportNode(point)
+            ReportNode(name, point)
         }
     }
 
@@ -534,7 +539,7 @@ class Parser(private val scanner: Scanner) {
                 match(SEMI_SYMBOL)
                 return PolygonCommand(pointList)
             }
-            else -> throw Error("Syntax error: expected command, found ${currentToken.symbol}")
+            else -> throw Exception("Syntax error: expected command, found ${currentToken.symbol}")
         }
     }
 
@@ -574,7 +579,7 @@ data class BuildingBlockNode(val name: String, val commands: List<CommandNode>) 
 data class EcoIslandNode(val name: String, val center: Point, val radius: Double) : BlockNode()
 data class BinNode(val location: Point) : BlockNode()
 data class DisposalSiteNode(val name: String, val p1: Point, val p2: Point) : BlockNode()
-data class ReportNode(val location: Point, val severity: String? = null) : BlockNode()
+data class ReportNode(val title: String, val location: Point,val severity: String? = null) : BlockNode()
 
 sealed class CommandNode : ASTNode()
 data class LineCommand(val from: Point, val to: Point) : CommandNode()
@@ -639,20 +644,63 @@ fun LineCommand.toFeature(type: String, name: String): String = """
         "type": "LineString",
         "coordinates": [ [${from.y}, ${from.x}], [${to.y}, ${to.x}] ]
       },
-      "properties": { "type": "$type", "name": $name }
+      "properties": { 
+        "type": "$type", 
+        "name": $name 
+      }
     }
 """.trimIndent()
 
-fun BendCommand.toFeature(type: String, name: String): String = """
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [ [${from.y}, ${from.x}], [${to.y}, ${to.x}] ]
-      },
-      "properties": { "type": "$type", "name": $name, "angle": $angle }
+fun BendCommand.toFeature(type: String, name: String): String {
+    val steps = 20
+
+    val points = interpolateArc(from, to, angle, steps)
+    val coordList = points.joinToString(", ") { "[${it.y}, ${it.x}]" }
+
+    return """
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [ $coordList ]
+          },
+          "properties": {
+            "type": "$type",
+            "name": $name,
+            "angle": $angle
+          }
+        }
+    """.trimIndent()
+}
+
+fun interpolateArc(from: Point, to: Point, angle: Double, steps: Int): List<Point> {
+    val points = mutableListOf<Point>()
+
+    val midX = (from.x + to.x) / 2
+    val midY = (from.y + to.y) / 2
+
+    val dx = to.x - from.x
+    val dy = to.y - from.y
+    val length = Math.hypot(dx, dy)
+    val radius = length / (2 * Math.sin(Math.toRadians(angle / 2)))
+
+    val normalX = -dy / length
+    val normalY = dx / length
+
+    val height = radius * (1 - Math.cos(Math.toRadians(angle / 2)))
+
+    val centerX = midX + normalX * height
+    val centerY = midY + normalY * height
+
+    for (i in 0..steps) {
+        val t = i.toDouble() / steps
+        val x = (1 - t) * (1 - t) * from.x + 2 * (1 - t) * t * centerX + t * t * to.x
+        val y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * centerY + t * t * to.y
+        points.add(Point(x, y))
     }
-""".trimIndent()
+
+    return points
+}
 
 fun BoxCommand.toFeature(type: String, name: String): String = run {
     val (lat1, lon1) = p1
@@ -671,7 +719,9 @@ fun BoxCommand.toFeature(type: String, name: String): String = run {
             "type": "Polygon",
             "coordinates": [ [ $coords ] ]
           },
-          "properties": { "type": "$type", "name": $name }
+          "properties": { 
+            "type": "$type",
+            "name": $name }
         }
     """.trimIndent()
 }
@@ -688,7 +738,10 @@ fun PolygonCommand.toFeature(type: String, name: String): String {
             "type": "Polygon",
             "coordinates": [ [ ${coords.joinToString(", ")} ] ]
           },
-          "properties": { "type": "$type", "name": $name }
+          "properties": { 
+            "type": "$type",
+            "name": $name 
+          }
         }
     """.trimIndent()
 }
@@ -732,10 +785,10 @@ fun BinNode.toFeature(type: String): String = """
 fun DisposalSiteNode.toFeature(type: String, name: String): String = BoxCommand(p1, p2).toFeature(type, name)
 fun ReportNode.toFeature(type: String): String {
     val color = when (severity?.removeSurrounding("\"")?.lowercase()) {
-        "high" -> "red"
-        "medium" -> "orange"
-        "low" -> "yellow"
-        else -> "gray"
+        "high" -> "#ff0000"
+        "medium" -> "#ffa500"
+        "low" -> "#ffff00"
+        else -> "#ffff00"
     }
 
 
@@ -748,7 +801,8 @@ fun ReportNode.toFeature(type: String): String {
           },
           "properties": {
             "type": "$type",
-            "severity": ${severity ?: "none"},
+            "title": $title,
+            "severity": ${severity ?: "\"low\""},
             "marker-color": "$color"
           }
         }
@@ -758,13 +812,13 @@ fun ReportNode.toFeature(type: String): String {
 
 fun main(args: Array<String>) {
     try{
-        var input = FileInputStream("src/test.txt")
+        var input = InputStreamReader(FileInputStream("src/test.txt"), Charsets.UTF_8)
         var scanner = Scanner(LanguageAutomaton, input)
 
         printTokens(scanner);
         println();
 
-        input = FileInputStream("src/test.txt")
+        input = InputStreamReader(FileInputStream("src/test.txt"), Charsets.UTF_8)
         scanner = Scanner(LanguageAutomaton, input)
         val parser = Parser(scanner);
         val ast = parser.parse()

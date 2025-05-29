@@ -20,7 +20,7 @@ Bin ::= "bin" Point ";"
 
 DisposalSite ::= "disposal-site" String "{" "box" "(" Point "," Point ")" ";" "}"
 
-ReportBlock ::= "report" Point ReportMeta
+ReportBlock ::= "report" String Point ReportMeta
 
 ReportMeta ::= "{" "severity" "(" String ")" ";" "}" | ";"
 
