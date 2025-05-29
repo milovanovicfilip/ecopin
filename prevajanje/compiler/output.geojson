@@ -71,10 +71,10 @@
     "type": "Point",
     "coordinates": [ 15.631198175160979, 46.5595917067311 ]
   },
-  "properties": { 
+  "properties": {
     "type": "report",
-    "marker-color": "#FF0000",
-    "marker-symbol": "info" 
+    "severity": "medium",
+    "marker-color": "orange"
   }
 }
           ]

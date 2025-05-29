@@ -1,6 +1,7 @@
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
+import javax.print.attribute.standard.Severity
 
 const val ERROR_STATE = 0
 
@@ -27,6 +28,7 @@ const val LINE_SYMBOL = 17
 const val CIRC_SYMBOL = 18
 const val BEND_SYMBOL = 19
 const val POLYGON_SYMBOL = 20
+const val SEVERITY_SYMBOL = 21
 
 
 const val EOF = -1
@@ -42,10 +44,10 @@ interface DFA {
 }
 
 object LanguageAutomaton: DFA {
-    override val states = (1 .. 78).toSet() //15
+    override val states = (1 .. 86).toSet() //15
     override val alphabet = 0 .. 255
     override val startState = 1
-    override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 70, 71, 72, 73, 74, 75, 76, 77, 78)
+    override val finalStates = setOf(2, 4, 6, 10, 12, 16, 21, 29, 31, 33, 36, 46, 59, 63, 70, 78, 79, 80, 81, 82, 83, 84, 85, 86)
 
     private val numberOfStates = states.max() + 1 // plus the ERROR_STATE
     private val numberOfCodes = alphabet.max() + 1 // plus the EOF
@@ -191,29 +193,40 @@ object LanguageAutomaton: DFA {
         setTransition(69, 'n', 70)
         setSymbol(70, POLYGON_SYMBOL)
 
+        // SEVERITY
+        setTransition(1, 's', 71)
+        setTransition(71, 'e', 72)
+        setTransition(72, 'v', 73)
+        setTransition(73, 'e', 74)
+        setTransition(74, 'r', 75)
+        setTransition(75, 'i', 76)
+        setTransition(76, 't', 77)
+        setTransition(77, 'y', 78)
+        setSymbol(78, SEVERITY_SYMBOL)
+
         //LPAREN, RPAREN, LBRACE, RBRACE, SEMI, COMMA
-        setTransition(1, '(', 71)
-        setTransition(1, ')', 72)
-        setTransition(1, '{', 73)
-        setTransition(1, '}', 74)
-        setTransition(1, ';', 75)
-        setTransition(1, ',', 76)
+        setTransition(1, '(', 79)
+        setTransition(1, ')', 80)
+        setTransition(1, '{', 81)
+        setTransition(1, '}', 82)
+        setTransition(1, ';', 83)
+        setTransition(1, ',', 84)
 
         //Za WHITESPACE-e in EOF
-        setTransition(1, ' ', 77)
-        setTransition(1, '\n', 77)
-        setTransition(1, '\r', 77)
-        setTransition(1, '\t', 77)
-        setTransition(1, EOF, 78)
+        setTransition(1, ' ', 85)
+        setTransition(1, '\n', 85)
+        setTransition(1, '\r', 85)
+        setTransition(1, '\t', 85)
+        setTransition(1, EOF, 86)
 
-        setSymbol(71, LPAREN_SYMBOL)
-        setSymbol(72, RPAREN_SYMBOL)
-        setSymbol(73, LBRACE_SYMBOL)
-        setSymbol(74, RBRACE_SYMBOL)
-        setSymbol(75, SEMI_SYMBOL)
-        setSymbol(76, COMMA_SYMBOL)
-        setSymbol(77, SKIP_SYMBOL)
-        setSymbol(78, EOF_SYMBOL)
+        setSymbol(79, LPAREN_SYMBOL)
+        setSymbol(80, RPAREN_SYMBOL)
+        setSymbol(81, LBRACE_SYMBOL)
+        setSymbol(82, RBRACE_SYMBOL)
+        setSymbol(83, SEMI_SYMBOL)
+        setSymbol(84, COMMA_SYMBOL)
+        setSymbol(85, SKIP_SYMBOL)
+        setSymbol(86, EOF_SYMBOL)
     }
 }
 
@@ -287,6 +300,7 @@ fun name(symbol: Int) =
         BOX_SYMBOL -> "BOX"
         REPORT_SYMBOL -> "REPORT"
         POLYGON_SYMBOL -> "POLYGON"
+        SEVERITY_SYMBOL -> "SEVERITY"
         else -> throw Error("Invalid symbol")
     }
 
@@ -439,9 +453,24 @@ class Parser(private val scanner: Scanner) {
     private fun reportBlock(): ReportNode {
         match(REPORT_SYMBOL)
         val point = point()
-        match(SEMI_SYMBOL)
-        return ReportNode(point)
+
+        return if (currentToken.symbol == LBRACE_SYMBOL) {
+            match(LBRACE_SYMBOL)
+            match(SEVERITY_SYMBOL)
+            match(LPAREN_SYMBOL)
+            val severity = currentToken.lexeme
+            match(STRING_SYMBOL)
+            match(RPAREN_SYMBOL)
+            match(SEMI_SYMBOL)
+            match(RBRACE_SYMBOL)
+            ReportNode(point, severity)
+        } else {
+            match(SEMI_SYMBOL)
+            ReportNode(point)
+        }
     }
+
+
 
     private fun commandList(): List<CommandNode> {
         val commands = mutableListOf<CommandNode>()
@@ -545,7 +574,7 @@ data class BuildingBlockNode(val name: String, val commands: List<CommandNode>) 
 data class EcoIslandNode(val name: String, val center: Point, val radius: Double) : BlockNode()
 data class BinNode(val location: Point) : BlockNode()
 data class DisposalSiteNode(val name: String, val p1: Point, val p2: Point) : BlockNode()
-data class ReportNode(val location: Point) : BlockNode()
+data class ReportNode(val location: Point, val severity: String? = null) : BlockNode()
 
 sealed class CommandNode : ASTNode()
 data class LineCommand(val from: Point, val to: Point) : CommandNode()
@@ -701,20 +730,30 @@ fun BinNode.toFeature(type: String): String = """
 """.trimIndent()
 
 fun DisposalSiteNode.toFeature(type: String, name: String): String = BoxCommand(p1, p2).toFeature(type, name)
-fun ReportNode.toFeature(type: String): String = """
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [ ${location.y}, ${location.x} ]
-      },
-      "properties": { 
-        "type": "$type",
-        "marker-color": "#FF0000",
-        "marker-symbol": "info" 
-      }
+fun ReportNode.toFeature(type: String): String {
+    val color = when (severity?.removeSurrounding("\"")?.lowercase()) {
+        "high" -> "red"
+        "medium" -> "orange"
+        "low" -> "yellow"
+        else -> "gray"
     }
-""".trimIndent()
+
+
+    return """
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [ ${location.y}, ${location.x} ]
+          },
+          "properties": {
+            "type": "$type",
+            "severity": ${severity ?: "none"},
+            "marker-color": "$color"
+          }
+        }
+    """.trimIndent()
+}
 
 
 fun main(args: Array<String>) {

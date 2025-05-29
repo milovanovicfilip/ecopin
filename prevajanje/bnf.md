@@ -20,7 +20,9 @@ Bin ::= "bin" Point ";"
 
 DisposalSite ::= "disposal-site" String "{" "box" "(" Point "," Point ")" ";" "}"
 
-ReportBlock ::= "report" Point ";"
+ReportBlock ::= "report" Point ReportMeta
+
+ReportMeta ::= "{" "severity" "(" String ")" ";" "}" | ";"
 
 CommandList ::= Command CommandList | ε
 
