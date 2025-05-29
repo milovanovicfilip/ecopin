@@ -812,17 +812,18 @@ fun ReportNode.toFeature(type: String): String {
 
 fun main(args: Array<String>) {
     try{
-        var input = InputStreamReader(FileInputStream("src/test.txt"), Charsets.UTF_8)
+        var input = InputStreamReader(FileInputStream("src/test.eco"), Charsets.UTF_8)
         var scanner = Scanner(LanguageAutomaton, input)
 
         printTokens(scanner);
         println();
 
-        input = InputStreamReader(FileInputStream("src/test.txt"), Charsets.UTF_8)
+        input = InputStreamReader(FileInputStream("src/test.eco"), Charsets.UTF_8)
         scanner = Scanner(LanguageAutomaton, input)
         val parser = Parser(scanner);
         val ast = parser.parse()
         File("output.geojson").writeText(ast.toGeoJson())
+        println("accept")
     }catch (e:Exception){
         println("reject")
     }
