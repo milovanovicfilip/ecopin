@@ -31,4 +31,5 @@ jobs:
         with: 
           webhook_url: ${{ secrets.WEBHOOK_URL }}
           data: '{"status": "new version pushed"}'
-          webhook_auth: "Bearer ${{ secrets.WEBHOOK_TOKEN }}" 
+          webhook_auth_type: "bearer"
+          webhook_auth: "${{ secrets.WEBHOOK_TOKEN }}" 
