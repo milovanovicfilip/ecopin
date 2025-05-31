@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors({
-  origin: 'http://0.0.0.0:3000',
+  origin: 'http://localhost:5173',
   credentials: true
 }));
 
