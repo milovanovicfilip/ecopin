@@ -31,5 +31,5 @@ jobs:
         with: 
           url: ${{ secrets.WEBHOOK_URL }}
           method: POST
-          body: '{"status"}' "new version pushed"}'
+          body: '{"status": "new version pushed"}'
           headers: '{"Content-Type":"application/json", "Authorization": "Bearer ${{ secrets.WEBHOOK_TOKEN }}"}' 
