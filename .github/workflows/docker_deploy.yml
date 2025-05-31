@@ -20,8 +20,16 @@ jobs:
 
       - name: Build image
         run:  |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/EcoPin:latest .
-      
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:latest .
+
       - name: Push image to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/EcoPin:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:latest
+
+      - name: Notify server via webhook
+        uses: distributhor/workflow-webhook@v3
+        with: 
+          url: ${{ secrets.WEBHOOK_URL }}
+          method: POST
+          body: '{"status"}' "new version pushed"}'
+          headers: '{"Content-Type":"application/json", "Authorization": "Bearer ${{ secrets.WEBHOOK_TOKEN }}"}' 
