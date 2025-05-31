@@ -29,7 +29,6 @@ jobs:
       - name: Notify server via webhook
         uses: distributhor/workflow-webhook@v3
         with: 
-          url: ${{ secrets.WEBHOOK_URL }}
-          method: POST
-          body: '{"status": "new version pushed"}'
-          headers: '{"Content-Type":"application/json", "Authorization": "Bearer ${{ secrets.WEBHOOK_TOKEN }}"}' 
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          data: '{"status": "new version pushed"}'
+          webhook_auth: "Bearer ${{ secrets.WEBHOOK_TOKEN }}" 
