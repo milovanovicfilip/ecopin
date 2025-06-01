@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import mongoose from 'mongoose';
 import PoiModel from '../models/Poi.Model.js';
 
 export const fetchPOIData = async () => {
@@ -23,6 +24,7 @@ export const fetchPOIData = async () => {
     const data = await response.json();
 
     await PoiModel.deleteMany({}); 
+    await mongoose.connection.collection('pois').drop();
 
     const points = data.elements
         .filter(el => el.type === "node" && el.lat && el.lon)
