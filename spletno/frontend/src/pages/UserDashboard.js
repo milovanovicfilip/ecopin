@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import '../styles/UserDashboard.css';
+import '../styles/AdminDashboard.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import  UserProfile  from '../components/UserProfile'
 
 import MapView from '../components/MapView';
 import axios from 'axios';
 
 const UserDashboard = () => {
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
 
@@ -63,7 +65,7 @@ const UserDashboard = () => {
 
         <div className="topbar d-flex">
           <div className="logo-area">
-            <img src="../../public/logo1.svg" alt="My Icon" />
+            <img src="/logo1.png" alt="My Icon" />
             <h1 className="m-0">EcoPin</h1>
           </div>
           <div className="topbar-main d-flex align-items-center justify-content-end">
@@ -88,7 +90,7 @@ const UserDashboard = () => {
                   <p className="profile-email">john.doe@example.com</p>
                 </div>
               </div>
-              <button className="custom-button">Edit Profile</button>
+              <button className="custom-button" onClick={()=> setShowProfileEdit(true)}>Edit Profile</button>
             </div>
             <div className='reports-background'>
               <h4 className='reports-title black-text'>My reports</h4>
@@ -97,7 +99,11 @@ const UserDashboard = () => {
 
           <div className="main-content">
             <div className='map-container'>
-             <MapView citySearch={searchQuery} onLocationSelect={setSelectedLocation} selectedLocation={selectedLocation} />
+              {showProfileEdit ? (
+                <UserProfile onCancel={() => setShowProfileEdit(false)} />
+              ): (
+              <MapView citySearch={searchQuery} onLocationSelect={setSelectedLocation} selectedLocation={selectedLocation} />
+              )}
             </div>
             <div className="add-report">
               <div className='add-report-background'>

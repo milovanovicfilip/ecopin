@@ -1,0 +1,38 @@
+.profile-container{
+    background: #EAEAEA;
+    width: 90%;
+    height: 90%;
+    border-radius: 30px;
+    padding: 5vh;
+}
+
+.profile-header{
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    gap: 2vh;
+}
+
+.profile-photo{
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 100%;
+}
+
+.profile-username{
+    color: #457744;
+    font-weight: bold;
+}
+
+.profile-reportscount{
+    font-weight: bold;
+}
+
+.profile-graphwrapper {
+    background-color: #bcbcbc;
+    width: 300px;
+    height: 300px;
+    border-radius: 30px;
+   
+}
