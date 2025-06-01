@@ -9,7 +9,7 @@ router.post('/login', userController.login.bind(userController));
 
 router.use(userController.checkJwt);
 
-router.get('/', userController.getAll());
+router.get('/', userController.getAll);
 router.get('/me', userController.getCurrentUser.bind(userController));
 
 router.patch('/points', userController.addPoints.bind(userController));
