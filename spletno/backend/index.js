@@ -14,11 +14,23 @@ dotenv.config()
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://20.73.3.104:3000', 
+  'http://20.73.3.104',
+]
+
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
 app.use('/api/user', userRouter);
