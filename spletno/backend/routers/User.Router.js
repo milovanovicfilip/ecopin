@@ -7,7 +7,7 @@ const userController = new UserController();
 router.post('/register', userController.register.bind(userController));
 router.post('/login', userController.login.bind(userController));
 
-router.use(userController.checkJwt);
+//router.use(userController.checkJwt);
 
 router.get('/', userController.getAll);
 router.get('/me', userController.getCurrentUser.bind(userController));
