@@ -30,6 +30,7 @@ const reportController = new ReportController();
 // Javni dostop (brez avtentikacije)
 router.get('/', reportController.getAll);
 router.get('/visible', reportController.getVisible);
+router.get('/search', reportController.getByTitle);
 router.get('/:id', reportController.getById);
 
 // Zaščiteni endpointi

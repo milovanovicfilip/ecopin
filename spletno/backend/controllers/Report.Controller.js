@@ -78,6 +78,31 @@ export default class ReportController{
         }
     }
 
+    getByTitle = async function (req, res) {
+        try {
+            const title = req.query.title;
+
+            if (!title) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Title query parameter is required'
+                });
+            }
+
+            const data = await ReportModel.find({
+                title: { $regex: title, $options: 'i' }
+            });
+
+            return res.status(200).json(data);
+        } catch (error) {
+            console.error('Error in getByTitle:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
     getVisible = async function (req, res) {
         try{
             const {bbox, status} = req.query;
@@ -177,7 +202,7 @@ export default class ReportController{
         let savedImagePath = null;
 
         try {
-        const { location, description, type, status, severity } = req.body;
+        const { location, title ,description, type, status, severity } = req.body;
         const image = req.file || null;
         const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
 
@@ -194,7 +219,7 @@ export default class ReportController{
         const validStatuses = ["reported", "in_progress", "cleaned"];
         const validSeverities = ["low", "medium", "high"];
         
-        console.log(location, description, type, status, severity);
+        console.log(location, title, description, type, status, severity);
         console.log(validTypes);
 
         if (!validTypes.includes(type)) {
@@ -238,6 +263,7 @@ export default class ReportController{
             coordinates: [parseFloat(longitude), parseFloat(latitude)]
             },
             reportedBy: req.user._id, // Uporabi ID prijavljenega uporabnika
+            title: title,
             description: description || '',
             type: type,
             status: status || "reported",
@@ -277,7 +303,7 @@ export default class ReportController{
     update = async function (req, res) {
             try{
                 const id = req.params.id;
-                var {description, type, status, severity} = req.body
+                var {title, description, type, status, severity} = req.body
                 
                 var report = await ReportModel.findById(id)
                 if (!report) {
@@ -318,6 +344,10 @@ export default class ReportController{
                     report.severity = severity;
                 }
     
+                if (title !== undefined) {
+                    report.title = title;
+                 } 
+
                 if (description !== undefined) {
                     report.description = description;
                  }    

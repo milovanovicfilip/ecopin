@@ -17,6 +17,10 @@ var reportSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "User"
     },
+    "title": {
+        type: String,
+        required: true
+    },
     "description": String,
     "type": {
         type: String,

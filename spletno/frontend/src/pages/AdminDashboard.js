@@ -86,9 +86,23 @@ const AdminDashboard = () => {
         <div className="dashboard">
           <div className="sidebar">
             <div className='reports-background'>
-              <h4 className='reports-title black-text'>Reports</h4>
+              <h4 className='reports-title'>Reports</h4>
               {loadingReports && <p>Loading...</p>}
               {reportsError && <p style={{ color: 'red' }}>{reportsError}</p>}
+                {!loadingReports && !reportsError && (
+                <ul className='report-list' style={{ listStyle: 'none', padding: 0 }}>
+                  {reports.map((report) => (
+                  <li className="report-single-card" key={report.id} style={{ marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
+                    <h6 className='report-single-card-title'>{report.title}</h6>
+                    <p className='report-single-card-description'>{report.description}</p>
+                    <span style={{ fontSize: '12px', color: 'gray' }}>Severity: {report.severity}</span>
+                  </li>
+                ))}
+              </ul>
+              )}
+              
+              
+              
             </div>
           </div>
 

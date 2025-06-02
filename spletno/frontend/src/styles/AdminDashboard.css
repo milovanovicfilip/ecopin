@@ -207,3 +207,25 @@ html, body, #root {
   margin-top: auto;
   margin-bottom: auto;
 }
+
+.reports-title{
+  font-weight:bolder;
+  color: #495353;
+}
+
+.report-single-card{
+  background: #D9D9D9;
+  padding: 2vh;
+  border-radius: 20px;
+}
+
+.report-single-card-title{
+  font-weight:bolder;
+  font-size: 2vh;
+  color: #495353;
+}
+
+.report-single-card-description{
+  color: #495353;
+  font-size: 1.5vh;
+}
