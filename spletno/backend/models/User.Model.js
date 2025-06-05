@@ -1,20 +1,21 @@
 import mongoose from "mongoose";
-import { ROLES } from '../utils/roles.js';
+import bcrypt from "bcryptjs";
 
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
-  auth0Id: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
   email: {
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    lowercase: true
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: 8,
+    select: false
   },
   name: {
     type: String,
@@ -29,10 +30,18 @@ const userSchema = new Schema({
     trim: true,
     unique: true
   },
-  roles: {
-    type: [String],
-    enum: Object.values(ROLES),
-    default: [ROLES.USER]
+  profilePicture: {
+    type: String
+  },
+  points: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  role: {
+    type: String,
+    enum: ["USER", "ADMIN"],
+    default: ["USER"]
   },
   createdAt: {
     type: Date,
@@ -41,41 +50,54 @@ const userSchema = new Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  refreshToken: {
+    type: String,
+    select: false
+  },
+  reports: [{
+    type: Schema.Types.ObjectId,
+    ref: "reports"
+  }],
+  rewards: [{
+    type: Schema.Types.ObjectId,
+    ref: "rewards"
+  }]
+});
+
+userSchema.pre('save', async function(next) {
+  if(!this.isModified('password')) {
+    return next();
+  }
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    this.updatedAt = Date.now();
+    next();
+  } catch(error) {
+    next(error);
   }
 });
 
-userSchema.pre('save', function(next) {
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.isRole = function(role) {
+  return this.role == role;
+};
+
+userSchema.methods.addPoints = async function(newpoints) {
+  if (newpoints < 0) {
+    throw new Error("Cannot add negative points!");
+  }
+
+  this.points += newpoints;
   this.updatedAt = Date.now();
-  next();
-});
-
-userSchema.methods.hasRole = function(role) {
-  return this.roles.includes(role);
-};
-
-userSchema.methods.hasPermission = function(permission) {
-  return this.roles.some(role => 
-    ROLE_PERMISSIONS[role]?.includes(permission)
-  );
-};
-
-userSchema.statics.findOrCreate = async function(auth0User) {
-  let user = await this.findOne({ auth0Id: auth0User.sub });
-  
-  if (!user) {
-    user = new this({
-      auth0Id: auth0User.sub,
-      email: auth0User.email,
-      name: auth0User.given_name || '',
-      lastname: auth0User.family_name || '',
-      username: auth0User.nickname || auth0User.email.split('@')[0],
-      roles: auth0User[`${process.env.AUTH0_NAMESPACE}roles`] || [ROLES.USER]
-    });
-    await user.save();
-  }
-
-  return user;
-};
+  await this.save();
+  return this.points;
+}
 
 const User = mongoose.model('users', userSchema, 'users');
 export default User;

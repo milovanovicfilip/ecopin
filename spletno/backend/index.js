@@ -50,7 +50,6 @@ mongoose.connect(process.env.MONGODB_URI)
 
 app.listen(PORT,'0.0.0.0', () => {
   console.log(`Server running on port http://localhost:${PORT}`);
-  console.log(`Auth0 Domain: ${process.env.AUTH0_DOMAIN}`);
 });
 
 schedulePOIFetch();
