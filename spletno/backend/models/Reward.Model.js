@@ -11,4 +11,5 @@ var rewardSchema = new Schema({
  
 }, { timestamps: true } );
 
-mongoose.exports = mongoose.model("rewards", rewardSchema);
+const RewardModel = mongoose.model("rewards", rewardSchema);
+export default RewardModel;
