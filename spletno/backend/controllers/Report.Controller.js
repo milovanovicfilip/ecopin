@@ -3,17 +3,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import ReportModel from '../models/Report.Model.js'
-import UserModel from '../models/User.Model.js'
-import { checkJwt, getUserFromDb } from '../utils/jwt.js'
+import User from '../models/User.Model.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 
 export default class ReportController{
-    constructor() {
-        this.requireAuth = [checkJwt, getUserFromDb];
-    }
 
     getAll = async function (req, res) {
         try{
@@ -83,10 +79,9 @@ export default class ReportController{
             const title = req.query.title;
 
             if (!title) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Title query parameter is required'
-                });
+                var status = "reported,in_progress,cleaned"
+                const data = await ReportModel.findByStatus(status.split(','));
+                return res.status(200).json(data);
             }
 
             const data = await ReportModel.find({
@@ -303,13 +298,23 @@ export default class ReportController{
     update = async function (req, res) {
             try{
                 const id = req.params.id;
+                const report = await ReportModel.findById(id).populate('reportedBy');
                 var {title, description, type, status, severity} = req.body
-                
-                var report = await ReportModel.findById(id)
+
+
                 if (!report) {
                     return res.status(404).json({
                         success: false,
                         message: 'Report not found'
+                    });
+                }
+
+                const user = req.user;
+
+                if (user.role !== "ADMIN" &&  report.reportedBy._id.toString() !== user._id.toString()) {
+                    return res.status(403).json({
+                        success: false,
+                        message: "Not authorized to update this report"
                     });
                 }
                 
@@ -371,16 +376,27 @@ export default class ReportController{
         delete = async function (req, res) {
             try{
                 const id = req.params.id;
-    
-                const result = await ReportModel.deleteOne({_id: id})
-                
-                if (result.deletedCount === 0) {
+
+                const report = await ReportModel.findById(id).populate('reportedBy');
+
+                if (!report) {
                     return res.status(404).json({
                         success: false,
                         message: 'Report not found'
                     });
                 }
+
+                const user = req.user;
     
+                if (user.role !== "ADMIN" && report.reportedBy._id.toString() !== user._id.toString()) {
+                    return res.status(403).json({
+                        success: false,
+                        message: "Not authorized to delete this report"
+                    });
+                }
+
+                const result = await ReportModel.deleteOne({ _id: id });
+
                 return res.status(200).json({
                     success: true,
                     message: 'Report successfully deleted'

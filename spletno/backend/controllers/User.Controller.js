@@ -13,22 +13,6 @@ export default class UserController {
     this.tokenExpiration = process.env.JWT_EXPIRATION || '1h';
   }
 
-  authenticate = (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
-    }
-
-    try {
-      const decoded = jwt.verify(token, this.jwtSecret);
-      req.user = decoded;
-      next();
-    } catch(error) {
-      res.status(400).json({ error: "Invalid token." });
-    }
-  };
-
   async getAll(req, res) {
     try {
       const users = await User.find().select('-password -refreshToken');
@@ -150,6 +134,29 @@ export default class UserController {
     }  catch (err) {
       console.error(err);
       res.status(400).json({ error: err.message });
+    }
+  }
+
+  async getByUsername(req, res) {
+    try {
+      const username = req.query.username;
+
+      if (!username) {
+        var users = await User.find().select('-password -refreshToken');
+        res.status(200). json(users);
+      }
+
+      const data = await User.find({
+        username: { $regex: username, $options: 'i'}
+      });
+
+      return res.status(200).json(data);
+    } catch (err) {
+      console.error("Error in getByUsername:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
     }
   }
 

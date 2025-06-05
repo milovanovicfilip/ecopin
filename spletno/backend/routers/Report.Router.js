@@ -1,10 +1,10 @@
 import express from 'express';
-import { checkJwt, checkPermission, checkOwnership, checkRole } from '../utils/jwt.js';
 import ReportController from '../controllers/Report.Controller.js';
 import ReportModel from '../models/Report.Model.js';
-import { PERMISSIONS, ROLES } from '../utils/roles.js';
 import multer from 'multer';
 import path from 'path';
+import { requireAdmin } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const upload = multer({ 
   storage: multer.diskStorage({
@@ -27,63 +27,17 @@ const upload = multer({
 const router = express.Router();
 const reportController = new ReportController();
 
-// Javni dostop (brez avtentikacije)
 router.get('/', reportController.getAll);
 router.get('/visible', reportController.getVisible);
 router.get('/search', reportController.getByTitle);
 router.get('/:id', reportController.getById);
+router.post('/polygon', reportController.getInPoligon);
 
-// Zaščiteni endpointi
-router.get('/byuser/:userid', 
-  ...reportController.requireAuth,
-  checkPermission(PERMISSIONS.REPORT_READ),
-  (req, res, next) => {
-    // Preveri če uporabnik dostopa do svojih reportov ali ima pravice
-    if (req.params.userid !== req.user._id.toString() && 
-        !req.user.roles.includes(ROLES.ADMIN) && 
-        !req.user.roles.includes(ROLES.MODERATOR)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Forbidden - Can only view your own reports' 
-      });
-    }
-    next();
-  },
-  reportController.getByUser
-);
+router.post("/", authenticate, upload.single('image'), reportController.add);
+router.put("/:id", authenticate, reportController.update);
+router.delete('/:id', authenticate, reportController.delete);
 
-router.post('/',
-  ...reportController.requireAuth,
-  checkPermission(PERMISSIONS.REPORT_CREATE),
-  upload.single('image'),
-  reportController.add
-);
-
-router.post('/polygon',
-  ...reportController.requireAuth,
-  checkPermission(PERMISSIONS.REPORT_READ),
-  reportController.getInPoligon
-);
-
-router.put('/:id',
-  ...reportController.requireAuth,
-  checkOwnership(ReportModel),
-  checkPermission(PERMISSIONS.REPORT_UPDATE),
-  reportController.update
-);
-
-router.delete('/:id',
-  ...reportController.requireAuth,
-  checkOwnership(ReportModel),
-  checkPermission(PERMISSIONS.REPORT_DELETE),
-  reportController.delete
-);
-
-router.patch('/:id/status',
-  ...reportController.requireAuth,
-  checkRole([ROLES.ADMIN, ROLES.MODERATOR]),
-  checkPermission(PERMISSIONS.REPORT_UPDATE_STATUS),
-  reportController.updateStatus
-);
+router.get('/byuser/:userid', authenticate, requireAdmin, reportController.getByUser);
+router.patch("/:id/status", authenticate, requireAdmin, reportController.updateStatus);
 
 export const reportRouter = router;

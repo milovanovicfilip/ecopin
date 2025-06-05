@@ -15,7 +15,7 @@ var reportSchema = new Schema({
     },
     "reportedBy": {
         type: Schema.Types.ObjectId,
-        ref: "User"
+        ref: "users"
     },
     "title": {
         type: String,
