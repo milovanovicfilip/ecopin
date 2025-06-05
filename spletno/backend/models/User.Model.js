@@ -41,7 +41,7 @@ const userSchema = new Schema({
   role: {
     type: String,
     enum: ["USER", "ADMIN"],
-    default: ["USER"]
+    default: "USER"
   },
   createdAt: {
     type: Date,
@@ -62,7 +62,23 @@ const userSchema = new Schema({
   rewards: [{
     type: Schema.Types.ObjectId,
     ref: "rewards"
-  }]
+  }],
+  seasonRewards: [{
+    reward: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'Reward' 
+    },
+    partner: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'Partner' 
+    },
+    receivedAt: Date,
+    rewardType: String
+  }],
+  seasonCompleted: { 
+    type: Boolean, 
+    default: false 
+  }
 });
 
 userSchema.pre('save', async function(next) {

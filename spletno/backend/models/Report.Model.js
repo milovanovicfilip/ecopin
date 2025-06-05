@@ -45,11 +45,11 @@ reportSchema.index({ status: 1 });
 reportSchema.index({ type: 1 });
 
 reportSchema.statics.findByStatus = async function(status) {
-    return await this.find({ status }).exec();
+    return await this.find({ status }).populate('reportedBy').exec();
 };
 
 reportSchema.statics.findByType = async function(type) {
-    return await this.find({ type }).exec();
+    return await this.find({ type }).populate('reportedBy').exec();
 };
 
 reportSchema.statics.findWithinPolygon = async function(polygonCoordinates, types = []) {

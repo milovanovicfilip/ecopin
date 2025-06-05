@@ -15,8 +15,8 @@ export default class UserController {
 
   async getAll(req, res) {
     try {
-      const users = await User.find().select('-password -refreshToken');
-      res.status(200). json(users);
+      const users = await User.find().select('-password -refreshToken').populate('reports');
+      res.status(200).json(users);
     } catch (err) {
       console.error("Error in user.getAll");
       res.status(500).json({ error: err.message });
@@ -48,6 +48,7 @@ export default class UserController {
         points: 0,
         reports: [],
         rewards: [],
+        seasonRewards: [],
         role: 'USER'
       });
 
@@ -107,7 +108,7 @@ export default class UserController {
 
   async getCurrentUser(req, res) {
     try {
-      const user = await User.findById(req.user.id).select('-password -refreshToken');
+      const user = await User.findById(req.user.id).select('-password -refreshToken').populate('rewards');
       if (!user) return res.status(404).json({ error: 'User not found' });
       res.json(user);
     } catch (error) {
@@ -141,9 +142,9 @@ export default class UserController {
     try {
       const username = req.query.username;
 
-      if (!username) {
+      if (!username || username=="") {
         var users = await User.find().select('-password -refreshToken');
-        res.status(200). json(users);
+        res.status(200).json(users);
       }
 
       const data = await User.find({

@@ -2,21 +2,11 @@ import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 var rewardSchema = new Schema({
-    "name": {
-        type: String,
-        required: true
-    },
+    "name": String,
     "description": String,
-    "partner": String,
-    "cost": {
-        type: Number,
-        minimum: 300
-    },
-    "isActive": Boolean,
-    "expirationDate": {
-        type: Date,
-        required: true
-    },
+    "level": Number,
+    "partners": [{type: Schema.Types.ObjectId, ref: 'Partner'}],
+    "requiredPoints": Number,
     "image" : String,
  
 }, { timestamps: true } );
