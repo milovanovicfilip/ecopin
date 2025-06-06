@@ -299,4 +299,21 @@ export default class PoiController {
       });
     }
   };
+
+  deleteAll = async function (req, res) {
+    try {
+      await PoiModel.deleteMany({});
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Pois successfully deleted'
+      });
+    } catch (error) {
+      console.error('Error in deleteAllPois:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error'
+      });
+    }
+  }
 }

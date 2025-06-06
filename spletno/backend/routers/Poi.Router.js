@@ -13,6 +13,8 @@ router.post('/polygon', poiController.getInPoligon);
 
 router.post('/', poiController.add);
 router.delete('/:id', poiController.delete);
+router.delete('/all', poiController.deleteAll);
+
 router.put('/:id', poiController.update);
 
 export const poiRouter = router;
