@@ -188,7 +188,7 @@ export default class PoiController {
 
   add = async function (req, res) {
     try {
-      const { location, type, address, city, description } = req.body;
+      const { location, type} = req.body;
   
       if (!location || !location.coordinates || !location.type) {
         return res.status(400).json({
@@ -201,13 +201,6 @@ export default class PoiController {
         return res.status(400).json({ 
           success: false, 
           message: 'Valid type is required'  
-        });
-      }
-
-      if (!city || typeof city !== 'string') {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'City name is required' 
         });
       }
 
@@ -225,10 +218,7 @@ export default class PoiController {
           type: location.type,
           coordinates: [parseFloat(longitude), parseFloat(latitude)]
         },
-        type: type,
-        address: address,
-        city: city,
-        description: description || ''
+        type: type
       });
 
       await newPoi.save();
@@ -249,7 +239,7 @@ export default class PoiController {
   update = async function (req, res) {
     try {
       const id = req.params.id;
-      const { type, address, city, description } = req.body;
+      const { type } = req.body;
 
       var poi = await PoiModel.findById(id);
       if (!poi) {
@@ -258,7 +248,7 @@ export default class PoiController {
           message: 'POI not found'
         });
       }
-      
+
       if (type) {
         if (!['eco-island', 'disposal-site', 'bin'].includes(type)) {
           return res.status(400).json({ 
@@ -268,20 +258,6 @@ export default class PoiController {
         }
         poi.type = type;
       }
-
-      poi.address = address ? address : poi.address;
-
-      if (city) {
-        if (typeof city !== 'string') {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'City must be a string' 
-          });
-        }
-        poi.city = city;
-      }
-      
-      poi.description = description ? description : poi.description;
 
       await poi.save();
 
