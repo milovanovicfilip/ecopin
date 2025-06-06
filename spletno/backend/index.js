@@ -24,6 +24,7 @@ app.use(cors({
 app.use('/api/user', userRouter);
 app.use('/api/poi', poiRouter)
 app.use('/api/report', reportRouter)
+app.use('/api/partners', partnerRouter)
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
