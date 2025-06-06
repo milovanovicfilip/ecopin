@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { generateKey } from "crypto";
 import { poiRouter } from "./routers/Poi.Router.js";
 import { reportRouter } from "./routers/Report.Router.js";
+import { partnerRouter } from "./routers/Partner.Router.js";
 import { userRouter } from './routers/User.Router.js'
 import { schedulePOIFetch } from './services/schedule.js';
 dotenv.config()
@@ -24,6 +25,7 @@ app.use(cors({
 app.use('/api/user', userRouter);
 app.use('/api/poi', poiRouter)
 app.use('/api/report', reportRouter)
+app.use('/api/partners', partnerRouter)
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
