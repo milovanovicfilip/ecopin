@@ -7,4 +7,5 @@ var partnerSchema = new Schema({
     "rewardTypes": [String],
 });
 
-mongoose.exports = mongoose.model("partners", partnerSchema);
+const PartnerModel = mongoose.model("partners", partnerSchema);
+export default PartnerModel;

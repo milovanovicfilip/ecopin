@@ -4,13 +4,67 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { throws } from 'assert';
 import { error } from 'console';
+import ReportModel from '../models/Report.Model.js';
+import { OAuth2Client } from 'google-auth-library';
+
 
 dotenv.config();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+
+async function getUniqueUsername(base) {
+  let username = base;
+  let suffix = 1;
+  while (await User.findOne({ username })) {
+    username = `${base}${suffix++}`;
+  }
+  return username;
+}
 
 export default class UserController {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET;
     this.tokenExpiration = process.env.JWT_EXPIRATION || '1h';
+  }
+
+  async googleAuth(req, res) {
+    try {
+      const { credential } = req.body;
+      if (!credential) {
+        return res.status(400).json({ error: 'No credential provided' });
+      }
+      
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+
+      const payload = ticket.getPayload();
+      const { email, given_name, family_name, picture } = payload;
+
+      let username = email.split('@')[0];
+      username = await getUniqueUsername(username);
+
+      let user = await User.findOne({ email });
+      if (!user) {
+        user = await User.create({
+          email,
+          name: given_name,
+          lastname: family_name,
+          profilePicture: picture,
+          username,
+          role: 'USER'
+        });
+      }
+
+      const token = this.generateToken(user);
+      const safeUser = this.getSafeUserData(user);
+
+      res.json({ token, user: safeUser });
+    } catch (err) {
+      console.error('Google Auth failed', err);
+      res.status(401).json({ error: 'Google authentication failed' });
+    }
   }
 
   async getAll(req, res) {
@@ -75,7 +129,12 @@ export default class UserController {
         res.status(400).json({ error: "Email/Username or password not provided." });
       }
 
-      const user = await User.findOne({ $or: [{email}, {username}]}).select("+password");
+      const user = await User.findOne({
+        $or: [
+          { email: email || '' }, 
+          { username: username || '' }
+        ]
+      }).select("+password");
 
       if (!user) {
         res.status(401).json({ error: "Invalid credentials. "});
@@ -154,6 +213,25 @@ export default class UserController {
       return res.status(200).json(data);
     } catch (err) {
       console.error("Error in getByUsername:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  }
+
+  async getMyReports(req, res) {
+    try {
+      const user = req.user;
+
+    
+      const data = await ReportModel.find({
+        reportedBy: user._id
+      });
+
+      return res.status(200).json(data);
+    } catch (err) {
+      console.error("Error in getMyReports:", err);
       return res.status(500).json({
         success: false,
         message: "Internal server error"

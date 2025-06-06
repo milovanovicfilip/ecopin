@@ -58,7 +58,7 @@ export default class ReportController{
             const userid = req.params.userid;
             const data = await ReportModel.find({reportedBy: userid}).populate('reportedBy');
             
-            if (!data) {
+            if (!data || data.length === 0) {
                 return res.status(404).json({
                     success: false,
                     message: 'Report not found'
@@ -198,101 +198,102 @@ export default class ReportController{
         let savedImagePath = null;
 
         try {
-        const { location, title ,description, type, status, severity } = req.body;
-        const image = req.file || null;
-        const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
+            const { location, title ,description, type, status, severity } = req.body;
+            const image = req.file || null;
+            const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
 
-        // Preveri obvezna polja
-        if (!parsedLocation?.coordinates || !parsedLocation?.type) {
-            return res.status(400).json({
-            success: false,
-            message: 'Location data is required with coordinates and type'
-            });
-        }
-
-        // Preveri veljavne vrednosti
-        const validTypes = ["mixed", "recyclable", "organic", "construction", "hazardous"];
-        const validStatuses = ["reported", "in_progress", "cleaned"];
-        const validSeverities = ["low", "medium", "high"];
-        
-        console.log(location, title, description, type, status, severity);
-        console.log(validTypes);
-
-        if (!validTypes.includes(type)) {
-            return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid report type' 
-            });
-        }
-
-        // Preveri koordinate
-        const [longitude, latitude] = parsedLocation.coordinates;
-        if (isNaN(longitude) || isNaN(latitude) || 
-            longitude < -180 || longitude > 180 || 
-            latitude < -90 || latitude > 90) {
-            return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid coordinates' 
-            });
-        }
-
-        // Obdelaj sliko če obstaja
-        if (image) {
-            const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
-            if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+            if (!title || title.trim() === ''){
+                return res.status(400).json({
+                    success: false,
+                    message: "Title is required"
+                })
+            }
+            
+            if (!parsedLocation?.coordinates || !parsedLocation?.type) {
+                return res.status(400).json({
+                success: false,
+                message: 'Location data is required with coordinates and type'
+                });
             }
 
-            const ext = path.extname(image.originalname);
-            const filename = `report_${Date.now()}${ext}`;
-            const filePath = path.join(uploadDir, filename);
+            const validTypes = ["mixed", "recyclable", "organic", "construction", "hazardous"];
+            const validStatuses = ["reported", "in_progress", "cleaned"];
+            const validSeverities = ["low", "medium", "high"];
+            
+            console.log(location, title, description, type, status, severity);
+            console.log(validTypes);
 
-            await fs.promises.copyFile(image.path, filePath);
-            savedImagePath = `/uploads/${filename}`;
-            await fs.promises.unlink(image.path);
-        }
+            if (!validTypes.includes(type)) {
+                return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid report type' 
+                });
+            }
 
-        // Ustvari nov report
-        const newReport = new ReportModel({
-            location: {
-            type: parsedLocation.type,
-            coordinates: [parseFloat(longitude), parseFloat(latitude)]
-            },
-            reportedBy: req.user._id, // Uporabi ID prijavljenega uporabnika
-            title: title,
-            description: description || '',
-            type: type,
-            status: status || "reported",
-            severity: severity || "medium",
-            image: savedImagePath
-        });
+            const [longitude, latitude] = parsedLocation.coordinates;
+            if (isNaN(longitude) || isNaN(latitude) || 
+                longitude < -180 || longitude > 180 || 
+                latitude < -90 || latitude > 90) {
+                return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid coordinates' 
+                });
+            }
 
-        await newReport.save();
+            if (image) {
+                const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+                if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+                }
 
-        return res.status(201).json({
-            success: true,
-            message: 'Report successfully submitted',
-            data: newReport
-        });
+                const ext = path.extname(image.originalname);
+                const filename = `report_${Date.now()}${ext}`;
+                const filePath = path.join(uploadDir, filename);
+
+                await fs.promises.copyFile(image.path, filePath);
+                savedImagePath = `/uploads/${filename}`;
+                await fs.promises.unlink(image.path);
+            }
+
+            const newReport = new ReportModel({
+                location: {
+                type: parsedLocation.type,
+                coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                },
+                reportedBy: req.user._id,
+                title: title,
+                description: description || '',
+                type: type,
+                status: status || "reported",
+                severity: severity || "medium",
+                image: savedImagePath
+            });
+
+            await newReport.save();
+
+            return res.status(201).json({
+                success: true,
+                message: 'Report successfully submitted',
+                data: newReport
+            });
 
         } catch (error) {
-        console.error('Error in addReport:', error);
-        
-        // Počisti naloženo sliko če je prišlo do napake
-        if (savedImagePath) {
-            try {
-            const filename = path.basename(savedImagePath);
-            await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
-            } catch (unlinkError) {
-            console.error('Error deleting image:', unlinkError);
+            console.error('Error in addReport:', error);
+            
+            if (savedImagePath) {
+                try {
+                const filename = path.basename(savedImagePath);
+                await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
+                } catch (unlinkError) {
+                console.error('Error deleting image:', unlinkError);
+                }
             }
-        }
 
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Internal server error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     }
 
@@ -357,7 +358,8 @@ export default class ReportController{
                 if (description !== undefined) {
                     report.description = description;
                  }    
-                await report.save()
+                await report.save()       
+                
     
                 return res.status(200).json({
                     success: true,
