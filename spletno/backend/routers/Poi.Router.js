@@ -12,8 +12,8 @@ router.post('/polygon', poiController.getInPoligon);
 
 
 router.post('/', poiController.add);
-router.delete('/:id', poiController.delete);
 router.delete('/all', poiController.deleteAll);
+router.delete('/:id', poiController.delete);
 
 router.put('/:id', poiController.update);
 
