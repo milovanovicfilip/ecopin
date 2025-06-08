@@ -1,0 +1,46 @@
+.register-image {
+  width: 70%;
+  height: 100%;
+  border-radius: 31px;
+  background-image: url('../public/ecopinRegister.png'); /* Replace with your image */
+  background-size: cover; /* Crops the image to fill the container */
+  background-position: center; /* Centers the crop */
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.login-image {
+  width: 70%;
+  height: 100%;
+  border-radius: 31px;
+  background-image: url('../public/ecopinLogin.png'); /* Replace with your image */
+  background-size: cover; /* Crops the image to fill the container */
+  background-position: center; /* Centers the crop */
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.forgot-password-image {
+  width: 70%;
+  height: 100%;
+  border-radius: 31px;
+  background-image: url('../public/ecopinForgotPassword.png'); /* Replace with your image */
+  background-size: cover; /* Crops the image to fill the container */
+  background-position: center; /* Centers the crop */
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 1100px) {
+  .register-image {
+    display: none;
+  }
+
+  .login-image {
+    display: none;
+  }
+
+  .forgot-password-image {
+    display: none;
+  }
+}

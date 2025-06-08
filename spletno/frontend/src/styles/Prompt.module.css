@@ -1,0 +1,34 @@
+.prompt-wrapper{
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+    width: 500px;
+}
+
+.prompt-container{
+    display: flex;
+    flex-direction: row;
+}
+
+.prompt-content{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.prompt-photo{
+    width: 100px;
+    height: 100px;
+    background: black;
+}
+
+.prompt-controls{
+    display: flex;
+    flex-direction: row;
+}
+
+.prompt-controls-dates, .prompt-controls-buttons{
+    display: flex;
+    flex-direction: row;
+}
+

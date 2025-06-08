@@ -1,0 +1,57 @@
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.register-center-wrapper{
+  height: 100%;
+  width: 100%;
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #495353
+}
+
+
+.register-container {
+  width: 90%;
+  height: 95%;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(69, 119, 68, 0.5);
+  background-color: white;
+  border-radius: 50px;
+}
+
+@media (max-width: 1250px) and (min-width: 768px) {
+  .register-container {
+    width: 80%; 
+    max-width: 700px; 
+    height: auto;
+    min-height: auto;
+    padding: 30px;
+  }
+  
+  .register-form-tab {
+    width: 100% !important;
+  }
+  
+  .register-image {
+    display: none;
+  }
+
+  .login-image {
+    display: none; 
+  }
+}
+
+@media (max-width: 767px) {
+  .register-container {
+    flex-direction: column;
+    padding: 16px;
+    width: 95%;
+    height: 100%;
+  }
+}

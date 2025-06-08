@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+
+/* RegisterFormTab.css */
+.register-form-tab {
+  width: 30%;
+  height: 100%;
+  padding: 3rem;
+  background-color: var(--tabBackground);
+  border-radius: 31px; /* Slightly smaller than main container */
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  justify-content: flex-start;
+}
+
+/* Rest of your existing RegisterFormTab.css remains the same */
+
+.register-form-tab h2 {
+  margin-bottom: 1.5rem;
+  font-size: 42px;
+  font-weight: 700;
+}
+
+.register-form-tab .form-group {
+  margin-bottom: 0.8rem;
+}
+
+.register-form-tab .form-control {
+  border-radius: 17px;
+  border: 1px solid var(--primary);
+  color: var(--text);
+  background-color: white;
+  padding: 12px 8px;
+  font-size: 16px;
+}
+
+.register-form-tab .form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.register-form-tab .form-control::placeholder {
+  color: var(--primary);
+}
+
+.register-button {
+  background-color: var(--primary);
+  border: none;
+  border-radius: 21px;
+  padding: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 1.5rem 0;
+  transition: background-color 0.2s;
+  font-size: 28px;
+  width: 100%;
+  margin: 0;
+}
+
+.register-button-wrapper {
+  margin-top: auto; /* Push to bottom */
+  padding-top: 2rem; /* Space above button */
+  width: 100%;
+}
+
+.register-button:hover {
+  background-color: #467a42;
+}
+
+.login-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: #467a42;
+  text-decoration: underline;
+}
+
+.social-buttons {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 8px;
+}
+
+.social-btn {
+  background-color: var(--buttonBackground);
+  border-radius: 13px;
+  color: var(--text);
+  padding: 8px 0; /* Adjust vertical padding, horizontal to 0 */
+  border: none;
+  font-size: 0.9rem;
+  flex: 1; /* Each button takes equal width */
+  text-align: center; /* Center text horizontally */
+  transition: background-color 0.2s;
+}
+
+.social-btn:not(:last-child) {
+  margin-right: -1px; /* Overlap borders by 1px to eliminate gap */
+}
+
+.social-btn:hover {
+  background-color: #c9c9c9;
+}
+
+.error-message {
+    margin-top: 2rem;
+    background-color: var(--error-transparent);
+    border: 2px var(--error) solid;
+    padding: 0.5rem 0.5rem;
+    color: var(--error);
+    border-radius: 15px;
+}
+
+/* Back button styles */
+.btn-back {
+  color: var(--primary);
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  color: #467a42;
+  transform: translateX(-2px);
+  text-decoration: underline;
+}
+
+.btn-back:active {
+  transform: translateX(0);
+}
+
+/* Adjust heading spacing */
+.register-form-tab h2 {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 1100px) and (min-width: 768px) {
+  .register-form-tab {
+    width: 100% !important;
+    padding: 2.5rem;
+    max-width: 600px;
+    margin: 0 auto; /* Center the form */
+  }
+  
+  .register-form-tab h2 {
+    font-size: 36px; /* Slightly smaller heading */
+  }
+  
+  .register-button {
+    font-size: 24px; /* Slightly smaller button */
+  }
+}
+
+@media (max-width: 767px) {
+  .register-form-tab {
+    width: 100%;
+    border-radius: 21px;
+  }
+}

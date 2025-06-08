@@ -1,0 +1,480 @@
+/* Root layout */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboardCenterWrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #495353;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.dashboardWrapper {
+  width: 80%;
+  height: 95%;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(69, 119, 68, 0.5);
+  background-color: white;
+  border-radius: 40px;
+}
+
+.dashboard {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: #F6F5EE; 
+  color: white;
+  padding: 1rem;
+  height: 100%;
+  border-right: 6px solid #EAEAEA;
+}
+
+.mainContent {
+  display: flex;
+  flex: 1;
+  background-color: #F6F5EE;
+  height: 90%;
+}
+
+/* Top bar */
+.topbar {
+  height: 70px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+.logoArea {
+  display: flex;
+  width: 300px;
+  align-items: center;
+  gap: 10px;
+  background-color: #F6F5EE;
+  padding: 0 3rem;
+  border-right: 6px solid #EAEAEA;
+}
+
+.logoArea img {
+  height: 50px;
+  width: auto;
+}
+
+.topbarMain {
+  flex: 1;
+  background-color: #548A50;
+  color: white;
+  border-bottom: 1px solid #548A50;
+  padding-right: 30px;
+}
+
+.mapContainer {
+  position: relative;
+  height: 90%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.leafletContainer {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+.addReport {
+  width: 300px;
+  background-color: #F6F5EE;
+  border-left: 6px solid #EAEAEA;
+  display: flex;
+  justify-content: center;
+}
+
+.addReportBackground {
+  display: flex;
+  flex-direction: column;
+  height: 95%;
+  width: 90%;
+  padding: 20px;
+  background-color: #EAEAEA;
+  border-radius: 40px;
+  margin-top: 1rem;
+}
+
+.top {
+  align-items: top;
+}
+
+.bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.customButton {
+  background-color: #548A50;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 15px;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+.customButton:hover {
+  background-color: #457744;
+}
+
+.formControlCurvy {
+  border-radius: 15px !important;
+}
+
+.formControlCurvyLess {
+  border-radius: 10px !important;
+}
+
+.userBackground {
+  display: flex;
+  flex-direction: column;
+  height: 25%;
+  padding: 20px;
+  background-color: #EAEAEA;
+  border-radius: 40px;
+  margin-bottom: 20px;
+}
+
+.reportsBackground {
+  display: flex;
+  flex-direction: column;
+  max-height: 61.5%;
+  width: 100%;
+  padding: 20px;
+  gap: 2vh;
+  background-color: #EAEAEA;
+  border-radius: 40px;
+}
+
+.reportList {
+  max-height: 100%;
+  height: 500px;
+}
+
+.blackText {
+  color: #495353;
+}
+
+.profileInfo {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.profileText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileName {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0;
+  color: #495353;
+}
+
+.profileEmail {
+  font-size: 0.9rem;
+  color: #495353;
+  margin: 4px 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.profilePicture {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.mapFull {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Floating buttons */
+.floatingButton {
+  position: absolute;
+  bottom: 40px;
+  right: 25px;
+  z-index: 400;
+  background-color: #548A50;
+  border: none;
+  color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  height: 50px;
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.floatingButton1 {
+  position: absolute;
+  bottom: 40px;
+  right: 80px;
+  z-index: 400;
+  background-color: #548A50;
+  border: none;
+  color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  height: 50px;
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Slide-out form */
+.addReportSlide {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 90%;
+  background-color: #EAEAEA;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  padding: 20px 30px;
+  transition: transform 0.4s ease;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden {
+  transform: translateX(100%);
+}
+
+.visible {
+  transform: translateX(0%);
+}
+
+.closeFormButton {
+  align-self: flex-end;
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #495353;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.mapControls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  overflow: hidden;
+}
+
+.filterButton {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: bold;
+  color: #495353;
+  transition: background 0.3s;
+}
+.active {
+  background-color: #548A50;
+}
+.filterButton:hover {
+  background: white;
+}
+
+.filterButtonActive {
+  background: #548A50;
+  color: white;
+}
+
+.profileButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.gearButton {
+  background: #548A50;
+  border: none;
+  border-radius: 15px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.gearButton img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.logoutButton {
+  flex: 1;
+}
+
+.reportsTitle{
+  font-weight:bolder;
+  color: #495353;
+}
+
+.reportList{
+  height: 60vh;
+  overflow-y: auto;
+  padding: 0;
+  padding-right: 4px;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  gap: 10px;
+}
+
+.report-single-card{
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  background: #D9D9D9;
+  padding: 2vh;
+  border-radius: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: scale(1);
+  flex-shrink: 0;
+  cursor: pointer;
+
+}
+
+.report-single-card.active {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+  background-color: #e2e2e2;
+}
+
+.report-single-card-title{
+  font-weight:bolder;
+  font-size: 2vh;
+  color: #495353;
+  cursor: 'pointer'
+}
+
+.report-single-card-description{
+  color: #495353;
+  font-size: 1.5vh;
+}
+
+.reportCardRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.reportCardText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-right: 30px
+}
+
+.reportCardImageWrapper {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.reportCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.deleteReportButton {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #495353;
+  cursor: pointer;
+  padding: 0;
+}
+
+.report-popup {
+  max-width: 200px;
+  min-width: 200px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.report-popup h3 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.report-popup p {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+
+.report-image {
+  width: 100%;
+  height: auto;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-top: 6px;
+}
