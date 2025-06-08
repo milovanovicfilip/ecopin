@@ -2,13 +2,15 @@ version: '3.9'
 
 services:
   backend:
-    image: filipmilovanovic/ecopin-backend:dev
-    container_name: ecopin-backend-dev
+    image: filipmilovanovic/ecopin-backend:latest
+    container_name: ecopin-backend
     ports:
       - "5000:5000"
+    restart: unless-stopped
 
   frontend:
-    image: filipmilovanovic/ecopin-frontend:dev
-    container_name: ecopin-frontend-dev
+    image: filipmilovanovic/ecopin-frontend:latest
+    container_name: ecopin-frontend
     ports:
       - "3000:80"
+    restart: unless-stopped

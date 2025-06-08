@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - dev
+    paths:
+      - 'spletno/**'
 
 jobs:
   build-image-and-push:
