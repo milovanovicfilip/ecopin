@@ -12,5 +12,5 @@ services:
     image: filipmilovanovic/ecopin-frontend:latest
     container_name: ecopin-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     restart: unless-stopped

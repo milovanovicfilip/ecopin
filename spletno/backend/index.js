@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors({
-  origin: ['http://20.73.3.104:3000','http://20.73.3.104' ],
+  origin: ['http://20.73.3.104:3000','http://20.73.3.104','http://localhost:3000' ],
   credentials: true
 }));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
