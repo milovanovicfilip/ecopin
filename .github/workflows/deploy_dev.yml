@@ -1,9 +1,9 @@
-name: docker_deploy
+name: deploy_dev
 
 on:
   push:
     branches:
-      - EK-61-GitHub-Actions-workflows
+      - dev
 
 jobs:
   build-image-and-push:
@@ -18,13 +18,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build image
+      - name: Build images
         run:  |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:latest ./spletno/backend
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:dev ./spletno/backend
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecopin-frontend:dev ./spletno/frontend
 
-      - name: Push image to Docker Hub
+      - name: Push images to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/ecopin-backend:dev
+          docker push ${{ secrets.DOCKER_USERNAME }}/ecopin-frontend:dev
 
       - name: Notify server via webhook
         uses: distributhor/workflow-webhook@v3
