@@ -9,7 +9,9 @@ import { authenticate } from '../middleware/auth.js';
 const storage = multer.diskStorage({
   destination: 'public/uploads/',
   filename: (req, file, cb) => {
-    const filename = `report_${Date.now()}${path.extname(file.originalname)}`;
+    let ext = path.extname(file.originalname);
+    if (!ext) ext = '.jpg';
+    const filename = `report_${Date.now()}${ext}`;
     cb(null, filename);
   }
 });

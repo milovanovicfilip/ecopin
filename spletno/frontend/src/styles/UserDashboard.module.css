@@ -19,6 +19,16 @@ html, body, #root {
   z-index: 0;
 }
 
+.customButton:hover:enabled {
+  background-color: #365c35;
+}
+
+.disabledButton {
+  background-color: #c5c5c5 !important;
+  color: #6d6d6d !important;
+  cursor: not-allowed;
+}
+
 .dashboardWrapper {
   width: 80%;
   height: 95%;

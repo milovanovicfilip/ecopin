@@ -279,6 +279,11 @@ const UserDashboard = () => {
 
               <h3 className={styles.blackText}>Add Report</h3>
               <hr />
+              {selectedLocation ? (
+                <p >Selected location: {selectedLocation[0].toFixed(3)} {selectedLocation[1].toFixed(3)}</p>
+              ):
+                <p style={{color: "red"}}>No selected location.</p>
+              }
 
               <form
                 onSubmit={(e) => {
@@ -319,7 +324,7 @@ const UserDashboard = () => {
                   className="form-control curvy-less mb-3"
                 />
                 <div className="bottom mt-auto">
-                  <button type="submit" disabled={!selectedLocation} className={`${styles.customButton} mt-3`}>
+                  <button type="submit" disabled={!selectedLocation} className={`${styles.customButton} mt-3 ${!selectedLocation ? styles.disabledButton : ''}`}>
                     Add
                   </button>
                 </div>
