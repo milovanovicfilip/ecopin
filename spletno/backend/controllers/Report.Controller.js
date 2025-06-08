@@ -57,17 +57,10 @@ export default class ReportController{
         try{
             const userid = req.params.userid;
             const data = await ReportModel.find({reportedBy: userid}).populate('reportedBy');
-            
-            if (!data || data.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Report not found'
-                });
-            }
 
             return res.status(200).json(data);
         }catch(error){
-            console.error('Error in getReportById:', error);
+            console.error('Error in getReportByUser:', error);
             return res.status(500).json({ 
                 success: false, 
                 message: 'Internal server error' 
@@ -170,9 +163,13 @@ export default class ReportController{
                 }
                 
                 const closedCoordinates = [...coordinates];
-                if (!closedCoordinates[0].equals(closedCoordinates[closedCoordinates.length - 1])) {
-                    closedCoordinates.push(closedCoordinates[0]);
-                }
+              
+		const first = closedCoordinates[0];
+		const last = closedCoordinates[closedCoordinates.length - 1];
+
+		if (first[0] !== last[0] || first[1] !== last[1]) {
+  			closedCoordinates.push(first);
+		}
     
                 const reports = await ReportModel.findWithinPolygon(
                     closedCoordinates,
@@ -195,104 +192,69 @@ export default class ReportController{
         }
         
     add = async function (req, res) {
-        let savedImagePath = null;
-
         try {
-            const { location, title ,description, type, status, severity } = req.body;
+            const { title ,description = '', type = 'mixed',severity = 'medium' } = req.body;
             const image = req.file || null;
-            const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
 
-            if (!title || title.trim() === ''){
-                return res.status(400).json({
-                    success: false,
-                    message: "Title is required"
-                })
+            let location = req.body.location;
+            if (typeof location === 'string') {
+                try {
+                    location = JSON.parse(location);
+                } catch (err) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Location is not in JSON format"
+                    });
+                }
             }
             
-            if (!parsedLocation?.coordinates || !parsedLocation?.type) {
+            if (!title || !location?.coordinates || location.type !== "Point") {
                 return res.status(400).json({
-                success: false,
-                message: 'Location data is required with coordinates and type'
+                    success: false,
+                    message: "Missing or invalid title/location"
                 });
             }
 
             const validTypes = ["mixed", "recyclable", "organic", "construction", "hazardous"];
-            const validStatuses = ["reported", "in_progress", "cleaned"];
             const validSeverities = ["low", "medium", "high"];
-            
-            console.log(location, title, description, type, status, severity);
-            console.log(validTypes);
 
             if (!validTypes.includes(type)) {
-                return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid report type' 
-                });
+                validTypes="mixed";
             }
 
-            const [longitude, latitude] = parsedLocation.coordinates;
-            if (isNaN(longitude) || isNaN(latitude) || 
-                longitude < -180 || longitude > 180 || 
-                latitude < -90 || latitude > 90) {
-                return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid coordinates' 
-                });
-            }
-
-            if (image) {
-                const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
-                if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-                }
-
-                const ext = path.extname(image.originalname);
-                const filename = `report_${Date.now()}${ext}`;
-                const filePath = path.join(uploadDir, filename);
-
-                await fs.promises.copyFile(image.path, filePath);
-                savedImagePath = `/uploads/${filename}`;
-                await fs.promises.unlink(image.path);
+            if(!validSeverities.includes(severity)){
+                severity="medium";
             }
 
             const newReport = new ReportModel({
                 location: {
-                type: parsedLocation.type,
-                coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(location.coordinates[0]),
+                        parseFloat(location.coordinates[1])
+                    ]
                 },
-                reportedBy: req.user._id,
-                title: title,
-                description: description || '',
-                type: type,
-                status: status || "reported",
-                severity: severity || "medium",
-                image: savedImagePath
-            });
+                title,
+                description,
+                type,
+                severity,
+                image: image ? `/uploads/${image.filename}` : null,
+                reportedBy: req.user._id
+                });
 
-            await newReport.save();
+                await newReport.save();
 
-            return res.status(201).json({
+                return res.status(201).json({
                 success: true,
-                message: 'Report successfully submitted',
+                message: "Report created successfully",
                 data: newReport
-            });
+                });
 
         } catch (error) {
-            console.error('Error in addReport:', error);
-            
-            if (savedImagePath) {
-                try {
-                const filename = path.basename(savedImagePath);
-                await fs.promises.unlink(path.join(__dirname, '..', 'public', 'uploads', filename));
-                } catch (unlinkError) {
-                console.error('Error deleting image:', unlinkError);
-                }
-            }
-
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Internal server error',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            console.error("Error in simplified addReport:", error);
+            return res.status(500).json({
+            success: false,
+            message: "Internal server error"
             });
         }
     }

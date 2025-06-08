@@ -44,12 +44,18 @@ reportSchema.index({ location: "2dsphere" });
 reportSchema.index({ status: 1 });
 reportSchema.index({ type: 1 });
 
-reportSchema.statics.findByStatus = async function(status) {
-    return await this.find({ status }).populate('reportedBy').exec();
+reportSchema.statics.findByStatus = async function(statuses) {
+    if (Array.isArray(statuses)) {
+        return await this.find({ status: { $in: statuses } }).populate('reportedBy').exec();
+    }
+    return await this.find({ status: statuses }).populate('reportedBy').exec();
 };
 
-reportSchema.statics.findByType = async function(type) {
-    return await this.find({ type }).populate('reportedBy').exec();
+reportSchema.statics.findByType = async function(types) {
+        if (Array.isArray(types)) {
+        return await this.find({ type: { $in: types } }).populate('reportedBy').exec();
+    }
+    return await this.find({ type: types }).populate('reportedBy').exec();
 };
 
 reportSchema.statics.findWithinPolygon = async function(polygonCoordinates, types = []) {

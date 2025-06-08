@@ -143,7 +143,7 @@ export default class UserController {
       const isMatch = await user.comparePassword(password);
 
       if (!isMatch) {
-        res.status(401).json({ error: "Invalid credentials. "});
+        return res.status(401).json({ error: "Invalid credentials. "});
       }
 
       const token = this.generateToken(user);
@@ -187,7 +187,7 @@ export default class UserController {
 
       const newPoints = await user.addPoints(points);
 
-      res.json({ 
+      return res.json({ 
         message: 'Points added successfully', 
         totalPoints: newPoints 
       });

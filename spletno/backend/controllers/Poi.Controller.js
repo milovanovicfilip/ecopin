@@ -236,6 +236,71 @@ export default class PoiController {
     }
   };
 
+  addMany = async function (req, res) {
+    try {
+      const pois = req.body;
+      
+      if (!Array.isArray(pois) || pois.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Request body must be a non-empty array of POIs',
+        });
+      }
+
+      const validTypes = ['eco-island', 'disposal-site', 'bin'];
+      const poisToInsert = [];
+
+      for (const poi of pois) {
+        const { location, type } = poi;
+
+        if (!location || !Array.isArray(location.coordinates) || location.coordinates.length !== 2 || !location.type) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each POI must have location with coordinates and type',
+          });
+        }
+
+        if (!type || !validTypes.includes(type)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each POI must have a valid type',
+          });
+        }
+
+        const [longitude, latitude] = location.coordinates;
+
+        if (isNaN(longitude) || isNaN(latitude) || longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
+          return res.status(400).json({
+            success: false,
+            message: 'Each POI must have valid coordinates',
+          });
+        }
+
+        poisToInsert.push({
+          location: {
+            type: location.type,
+            coordinates: [parseFloat(longitude), parseFloat(latitude)],
+          },
+          type: type,
+        });
+      }
+
+      await PoiModel.insertMany(poisToInsert);
+
+      return res.status(201).json({
+        success: true,
+        message: 'POIs successfully submitted',
+        insertedCount: poisToInsert.length
+      });
+    } catch (error) {
+      console.error('Error in addManyPoi:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error'
+      });
+    }
+  };
+
   update = async function (req, res) {
     try {
       const id = req.params.id;
