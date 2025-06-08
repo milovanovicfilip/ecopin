@@ -247,10 +247,15 @@ const handleDeleteReport = async (id) => {
             <h1 className="m-0">EcoPin</h1>
           </div>
           <div className={`${styles['topbar-main']} d-flex gap-5 align-items-center justify-content-between`}>
-
-            <Link to="/partners" className={styles['topbar-link']}>
+            <div className='d-flex gap-2'>
+               <Link to="/partners" className={styles['topbar-link']}>
               <p className={styles['topbar-link']}>Partners</p>
             </Link>
+             <Link to="/logout" className={styles['topbar-link']}>
+              <p className={styles['topbar-link']}>Log out</p>
+            </Link>
+            </div>
+           
 
             <div className="d-flex align-items-center justify-content-between gap-5">
               <img className={styles['city-logo']} src={currentUser?.profilePicture}></img>

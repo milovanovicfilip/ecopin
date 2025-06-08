@@ -84,6 +84,11 @@ html, body, #root {
   font-size: 1rem;
   text-decoration: none;
   cursor: pointer;
+  border-radius: 10px;
+  background-color: #61a05d;
+  padding: 1vh;
+  padding-top: 0.5vh;
+  padding-bottom: 0.5vh;
   margin: 0;
 }
 
