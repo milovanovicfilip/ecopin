@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.css": "/static/css/main.00d264c0.css",
-    "main.js": "/static/js/main.58ca4bdd.js",
+    "main.css": "/static/css/main.bdb0b1a9.css",
+    "main.js": "/static/js/main.726ec113.js",
     "static/js/488.ac5a44d4.chunk.js": "/static/js/488.ac5a44d4.chunk.js",
     "static/media/ecopinRegister.png": "/static/media/ecopinRegister.88ec2a075289b0af938d.png",
     "static/media/ecopinLogin.png": "/static/media/ecopinLogin.eefd95af390b67fbb094.png",
     "static/media/ecopinForgotPassword.png": "/static/media/ecopinForgotPassword.8fd085932878a415706d.png",
     "static/media/spritesheet.svg": "/static/media/spritesheet.a4e0eb7ad904a4858361.svg",
     "index.html": "/index.html",
-    "main.00d264c0.css.map": "/static/css/main.00d264c0.css.map",
-    "main.58ca4bdd.js.map": "/static/js/main.58ca4bdd.js.map",
+    "main.bdb0b1a9.css.map": "/static/css/main.bdb0b1a9.css.map",
+    "main.726ec113.js.map": "/static/js/main.726ec113.js.map",
     "488.ac5a44d4.chunk.js.map": "/static/js/488.ac5a44d4.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.00d264c0.css",
-    "static/js/main.58ca4bdd.js"
+    "static/css/main.bdb0b1a9.css",
+    "static/js/main.726ec113.js"
   ]
 }

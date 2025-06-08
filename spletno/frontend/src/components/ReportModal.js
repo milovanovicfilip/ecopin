@@ -11,7 +11,7 @@ export default function ReportModal({ report, onClose, onAdvanceStatus, onDelete
         <button className={styles['modal-close']} onClick={onClose}>✖</button>
 
         <img
-          src={`http://20.73.3.104:5000/public${report.image}` || '/placeholder.png'}
+          src={`http://20.73.3.104:5000${report.image}` || '/placeholder.png'}
           alt="Report"
           className={styles['modal-image']}
           onClick={() => setShowImageZoom(true)}

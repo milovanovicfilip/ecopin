@@ -228,7 +228,7 @@ const UserDashboard = () => {
                       {report.image && (
                         <div className={styles.reportCardImageWrapper}>
                           <img
-                            src={`http://20.73.3.104:5000/public${report.image}`}
+                            src={`http://20.73.3.104:5000${report.image}`}
                             alt="report"
                             className={styles.reportCardImage}
                           />
