@@ -15,19 +15,17 @@ describe('Automatic testing of API routes for Report', () => {
     });
 
     describe('POST rute', () => {
-        test('POST /api/reports', async () => {
+        test('POST /api/report', async () => {
             const newReport = {
                 location: { 
                     type: 'Point', 
                     coordinates: [46.56145033140468, 15.635163957985426]
                 },
-                reportType: 'missing_bin',
-                city: 'Maribor',
-                description: 'Missing bin in Maribor'
+                title: "Missing bin"
             };
 
             const response = await request(app)
-                .post('/api/reports')
+                .post('/api/report')
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(newReport);
 
